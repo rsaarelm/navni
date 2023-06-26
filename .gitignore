@@ -1,0 +1,5 @@
+/target
+
+# Flake stuff
+.direnv/
+result

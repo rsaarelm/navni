@@ -1,0 +1,46 @@
+[package]
+name = "navni"
+version = "0.1.0"
+license = "MIT/Apache-2.0"
+authors = ["Risto Saarelma <risto.saarelma@iki.fi>"]
+edition = "2021"
+description = "Library for pixel or text graphics games"
+keywords = ["terminal", "gui", "gamedev"]
+
+[lib]
+name = "navni"
+
+[features]
+gui = ["env_logger", "miniquad"]
+tty = ["crossterm", "signal-hook", "syslog"]
+
+[dependencies]
+anyhow = "1"
+derive_deref = "1"
+glam = { version = "0.24", features = ["serde"] }
+image = "0.24"
+log = "0.4"
+memoize = "0.4"
+num-traits = "0.2"
+rustc-hash = "1"
+seq-macro = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_with = "3"
+
+env_logger = { version = "0.10", optional = true }
+# TODO: Go back to using a crates version once it's released with the fixes I rely on.
+# miniquad = { version = "0.4", optional = true }
+miniquad = { git = "https://github.com/not-fl3/miniquad", branch = "master", optional = true }
+
+crossterm = { version = "0.26", optional = true }
+signal-hook = { version = "0.3", optional = true }
+syslog = { version = "6", optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-logger = "0.2"
+
+[dev-dependencies]
+fraction = "0.13"
+lazy_static = "1"
+quickcheck = "1"
+quickcheck_macros = "1"
