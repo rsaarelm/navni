@@ -1,7 +1,4 @@
-use navni::{
-    area, Backend, CharCell, Config, Key, MouseButton, MousePress, MouseState,
-    Rgba, StackOp, X256Color,
-};
+use navni::prelude::*;
 
 fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
     let a = area(80, 24);

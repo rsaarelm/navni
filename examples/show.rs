@@ -1,6 +1,4 @@
-use navni::{
-    area, Backend, Key, MouseButton, MousePress, MouseState, Rgba, StackOp,
-};
+use navni::prelude::*;
 use std::env;
 
 type GameData = image::RgbaImage;

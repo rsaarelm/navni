@@ -29,5 +29,7 @@ pub mod orthotope;
 pub use orthotope::area;
 pub type Rect = orthotope::Rect<i32>;
 
+pub mod prelude;
+
 mod scene;
 pub use scene::{Scene, StackOp};
