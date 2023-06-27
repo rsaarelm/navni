@@ -13,7 +13,10 @@ pub fn run<T: 'static>(
     scene: impl Scene<T> + 'static,
 ) -> ! {
     let config = config.clone();
-    miniquad::start(conf::Conf::default(), move || {
+    let mut mq_config = conf::Conf::default();
+    mq_config.window_title = config.window_title.clone();
+
+    miniquad::start(mq_config, move || {
         Box::new(Runtime::new(&config, game, SceneStack::new(scene)))
     });
     std::process::exit(0);
