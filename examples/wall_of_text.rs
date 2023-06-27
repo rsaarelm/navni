@@ -22,5 +22,5 @@ fn lorem(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
 }
 
 fn main() {
-    navni::run(&Default::default(), (), lorem);
+    run(&Default::default(), (), lorem);
 }

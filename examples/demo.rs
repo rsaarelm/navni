@@ -110,7 +110,7 @@ fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
 }
 
 fn main() {
-    navni::run(
+    run(
         &Config {
             window_title: "navni demo".to_owned(),
             system_color_palette: Some(LIGHT_PALETTE),

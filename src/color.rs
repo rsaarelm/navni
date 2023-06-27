@@ -3,7 +3,9 @@ use seq_macro::seq;
 use serde::{Deserialize, Serialize};
 
 /// 32-bit full-color color type.
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
+#[derive(
+    Copy, Clone, Default, Eq, PartialEq, Hash, Debug, Serialize, Deserialize,
+)]
 pub struct Rgba {
     pub r: u8,
     pub g: u8,
@@ -196,6 +198,7 @@ impl From<X256Color> for Rgba {
 #[derive(
     Copy,
     Clone,
+    Default,
     Eq,
     PartialEq,
     Hash,

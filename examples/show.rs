@@ -71,5 +71,5 @@ fn main() {
             .expect("Failed to parse image file")
             .to_rgba8();
 
-    navni::run(&Default::default(), image, show);
+    run(&Default::default(), image, show);
 }
