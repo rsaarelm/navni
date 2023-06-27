@@ -2,6 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use crate::Backend;
 
+/// Scene stack operation.
 pub enum StackOp<T> {
     /// Exit current scene.
     Pop,
@@ -11,7 +12,12 @@ pub enum StackOp<T> {
     Replace(Box<dyn Scene<T>>),
 }
 
+/// A single scene screen. Scenes operate on a shared game data value.
 pub trait Scene<T> {
+    /// Update and draw the scene. The scene draws itself to the navni
+    /// backend. `n_updates` tells how many times the game state should be
+    /// updated during this update to keep a consistent update pace. If
+    /// updating or rendering is slow, `n_updates` will start going up.
     fn update(
         &mut self,
         game: &mut T,

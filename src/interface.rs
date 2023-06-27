@@ -3,14 +3,14 @@ use crate::{Key, KeyTyped, MouseState, Rgba, X256Color};
 pub trait Backend {
     /// Draw a pixel buffer of a given size to backend.
     ///
-    /// The buffer may be magnified if it's much smaller than the backend
-    /// pixel resolution.
+    /// Backends may draw buffers magnified if they are much smaller than the
+    /// display area.
     fn draw_pixels(&mut self, w: u32, h: u32, buffer: &[Rgba]);
 
     /// Draw a character buffer of a given size to backend.
     ///
-    /// The buffer may be magnified if it's much smaller than the backend
-    /// char grid resolution.
+    /// Backends may draw buffers magnified if they are much smaller than the
+    /// display area.
     fn draw_chars(&mut self, w: u32, h: u32, buffer: &[CharCell]);
 
     /// Return pixel resolution of backend.
@@ -42,7 +42,9 @@ pub trait Backend {
 pub struct CharCell {
     /// Char in UTF-16.
     pub c: u16,
+    /// Cell foreground color, `X256Color::FOREGROUND` by default.
     pub foreground: X256Color,
+    /// Cell background color, `X256Color::BACKGROUND` by default.
     pub background: X256Color,
 }
 

@@ -1,7 +1,9 @@
 use crate::Rgba;
 
+/// Navni application configuration.
 #[derive(Clone, Default, Debug)]
 pub struct Config {
+    /// Title of the application window.
     pub window_title: String,
 
     /// Optional custom colors for the first 16 terminal colors.
@@ -9,6 +11,8 @@ pub struct Config {
     /// Terminal colors use the 256 color Xterm palette. Colors 16 to 255 can
     /// not be customized.
     pub system_color_palette: Option<[Rgba; 16]>,
+
+    /// Custom bitmap font sheet.
     pub font_sheet: Option<FontSheet>,
 }
 
@@ -21,6 +25,8 @@ pub struct FontSheet {
 }
 
 /// A commonly used codepage for font sheets.
+///
+/// See <https://en.wikipedia.org/wiki/Code_page_437>.
 #[rustfmt::skip]
 pub const CODEPAGE_437: [char; 256] = [
     // 0x0x

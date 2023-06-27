@@ -2,6 +2,7 @@ use std::env;
 
 use log::LevelFilter;
 
+/// Start a syslog logger.
 pub fn start(pname: &str) {
     let formatter = syslog::Formatter3164 {
         facility: syslog::Facility::LOG_USER,

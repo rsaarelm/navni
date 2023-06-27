@@ -4,9 +4,10 @@
 //! TTY programs can't use logging to stdout so they need to be debugged with
 //! the env logger.
 
+// TODO: WASM logging
 #[cfg_attr(
     all(feature = "gui", target_arch = "wasm32"),
-    path = "wasm_logger.rs"
+    path = "null_logger.rs"
 )]
 // TODO: Windows logging
 #[cfg_attr(

@@ -2,7 +2,7 @@ use memoize::memoize;
 use seq_macro::seq;
 use serde::{Deserialize, Serialize};
 
-/// sRGBA color type
+/// 32-bit full-color color type.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Serialize, Deserialize)]
 pub struct Rgba {
     pub r: u8,
@@ -190,7 +190,9 @@ impl From<X256Color> for Rgba {
     }
 }
 
-/// Color using the 256 color XTerm palette.
+/// 256 color Xterm palette color.
+///
+/// See <https://www.ditig.com/256-colors-cheat-sheet>.
 #[derive(
     Copy,
     Clone,

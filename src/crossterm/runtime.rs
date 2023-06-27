@@ -25,6 +25,8 @@ use signal_hook::{consts::SIGTERM, iterator::Signals};
 const KEY_REPEAT_START: Duration = Duration::from_millis(700);
 const KEY_REPEAT_CONTINUE: Duration = Duration::from_millis(50);
 
+/// Run an application with the given starting scene and game data using a
+/// TTY backend.
 pub fn run<T>(
     _config: &Config,
     mut game: T,
