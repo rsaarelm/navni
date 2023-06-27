@@ -412,6 +412,8 @@ impl GuiBackend {
 
 impl Backend for GuiBackend {
     fn draw_pixels(&mut self, w: u32, h: u32, buffer: &[crate::Rgba]) {
+        assert!(buffer.len() == (w * h) as usize);
+
         self.gl.texture_resize(
             self.bindings.images[0],
             w,
@@ -436,6 +438,8 @@ impl Backend for GuiBackend {
     }
 
     fn draw_chars(&mut self, w: u32, h: u32, buffer: &[crate::CharCell]) {
+        assert!(buffer.len() == (w * h) as usize);
+
         // TODO: Make the channel-buffers reused members of GuiBackend so I
         // don't need to heap-allocate new ones every frame.
         //

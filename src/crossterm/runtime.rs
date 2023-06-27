@@ -260,7 +260,8 @@ impl Backend for TtyBackend {
     }
 
     fn draw_chars(&mut self, w: u32, h: u32, buffer: &[CharCell]) {
-        assert!(buffer.len() as u32 == w * h);
+        assert!(buffer.len() == (w * h) as usize);
+
         self.mouse_transform.scale = ivec2(1, 1);
 
         let mut stdout = std::io::stdout();
