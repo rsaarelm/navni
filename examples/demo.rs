@@ -1,13 +1,9 @@
 use navni::{
-    area, Backend, CharCell, Key, MouseButton, MousePress, MouseState, StackOp,
-    X256Color,
+    area, Backend, CharCell, Config, Key, MouseButton, MousePress, MouseState,
+    Rgba, StackOp, X256Color,
 };
 
-fn show(
-    _: &mut (),
-    b: &mut dyn Backend,
-    _: u32,
-) -> Option<StackOp<()>> {
+fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
     let a = area(80, 24);
     let mut buf: Vec<CharCell> = vec![Default::default(); a.volume() as usize];
 
@@ -117,5 +113,32 @@ fn show(
 }
 
 fn main() {
-    navni::run(&Default::default(), (), show);
+    navni::run(
+        &Config {
+            window_title: "navni demo".to_owned(),
+            system_color_palette: Some(LIGHT_PALETTE),
+            ..Default::default()
+        },
+        (),
+        show,
+    );
 }
+
+const LIGHT_PALETTE: [Rgba; 16] = [
+    Rgba::new(0xaa, 0xaa, 0xaa, 0xff), // white
+    Rgba::new(0x66, 0x00, 0x00, 0xff), // maroon
+    Rgba::new(0x00, 0x66, 0x00, 0xff), // green
+    Rgba::new(0x66, 0x33, 0x00, 0xff), // brown
+    Rgba::new(0x00, 0x00, 0x88, 0xff), // navy
+    Rgba::new(0x66, 0x00, 0x66, 0xff), // purple
+    Rgba::new(0x00, 0x66, 0x66, 0xff), // teal
+    Rgba::new(0x33, 0x33, 0x33, 0xff), // gray
+    Rgba::new(0x77, 0x77, 0x77, 0xff), // silver
+    Rgba::new(0xaa, 0x00, 0x00, 0xff), // red
+    Rgba::new(0x00, 0xaa, 0x00, 0xff), // lime
+    Rgba::new(0xaa, 0x55, 0x00, 0xff), // yellow
+    Rgba::new(0x00, 0x00, 0xaa, 0xff), // blue
+    Rgba::new(0xaa, 0x00, 0xaa, 0xff), // fuchsia
+    Rgba::new(0x00, 0x99, 0x99, 0xff), // aqua
+    Rgba::new(0x00, 0x00, 0x00, 0xff), // black
+];

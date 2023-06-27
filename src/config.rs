@@ -74,8 +74,7 @@ pub const CODEPAGE_437: [char; 256] = [
 
 impl Default for FontSheet {
     fn default() -> Self {
-        const TAMSYN_15: &[u8] =
-            include_bytes!("../assets/tamsyn8x15b.png");
+        const TAMSYN_15: &[u8] = include_bytes!("../assets/tamsyn8x15b.png");
 
         // XXX: This could be a lazy-static block, but I assume the default
         // constructor will mostly be called once at startup so it shouldn't

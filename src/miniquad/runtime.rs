@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use crate::{
     scene::SceneStack, Backend, Config, FontSheet, Key, KeyTyped, MouseState,
-    Rgba, Scene, FRAME_DURATION, MAX_UPDATES_PER_FRAME,
+    Rgba, Scene, X256Color, FRAME_DURATION, MAX_UPDATES_PER_FRAME,
 };
 use miniquad::*;
 use rustc_hash::FxHashSet as HashSet;
@@ -158,6 +158,7 @@ struct GuiBackend {
     // All undefined codepoints will point to 0xff.
     char_lookup: Vec<u8>,
     font_size: (u32, u32),
+    system_colors: Option<[Rgba; 16]>,
 
     last_update: f64,
 
@@ -340,6 +341,7 @@ impl GuiBackend {
             bindings,
             char_lookup,
             font_size,
+            system_colors: config.system_color_palette,
             last_update,
             key_down: Default::default(),
             mouse_state: Default::default(),
@@ -396,6 +398,16 @@ impl GuiBackend {
             (y as i32 - self.mouse_offset.1) / self.mouse_scale.1,
         )
     }
+
+    fn convert_color(&self, c: X256Color) -> Rgba {
+        if c.0 < 16 {
+            if let Some(pal) = self.system_colors {
+                return pal[c.0 as usize];
+            }
+        }
+
+        c.into()
+    }
 }
 
 impl Backend for GuiBackend {
@@ -435,10 +447,14 @@ impl Backend for GuiBackend {
             .iter()
             .map(|a| self.char_lookup[a.c as usize] as u32)
             .collect();
-        let fore: Vec<Rgba> =
-            buffer.iter().map(|a| a.foreground.into()).collect();
-        let back: Vec<Rgba> =
-            buffer.iter().map(|a| a.background.into()).collect();
+        let fore: Vec<Rgba> = buffer
+            .iter()
+            .map(|a| self.convert_color(a.foreground))
+            .collect();
+        let back: Vec<Rgba> = buffer
+            .iter()
+            .map(|a| self.convert_color(a.background))
+            .collect();
 
         self.gl.texture_resize(
             self.bindings.images[2],
