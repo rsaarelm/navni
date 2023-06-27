@@ -1,4 +1,3 @@
-# Based on https://github.com/nix-community/naersk/blob/master/examples/multi-target/flake.nix
 {
   inputs = {
     rust-overlay.url = "github:oxalica/rust-overlay";
