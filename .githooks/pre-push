@@ -1,0 +1,11 @@
+# Formatting check
+set -e
+cargo fmt --check
+
+# Make sure both backends compile and WASM build works.
+cargo check --features=tty
+cargo check --features=gui
+
+# Main program unit tests
+cargo test --features=tty
+cargo test --features=gui
