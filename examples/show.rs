@@ -40,18 +40,6 @@ fn show(
         return Some(StackOp::Pop);
     }
 
-    for _ in 0..n {
-        for y in 0..game.height() {
-            let mut pix = vec![*game.get_pixel(game.width() - 1, y)];
-            for x in 0..(game.width() - 1) {
-                pix.push(*game.get_pixel(x, y));
-            }
-            for x in 0..game.width() {
-                game.put_pixel(x, y, pix[x as usize]);
-            }
-        }
-    }
-
     {
         let rgba_slice: &[Rgba] = unsafe { game.as_raw().align_to::<Rgba>().1 };
         let buf = &rgba_slice[..(game.width() * game.height()) as usize];

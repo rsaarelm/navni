@@ -22,23 +22,6 @@ fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
             CharCell::new('>', X256Color::LIME, X256Color::BACKGROUND);
     }
 
-    if b.is_down(Key::Shift) {
-        buf[a.idx([1, 4])] =
-            CharCell::new('S', X256Color::BLUE, X256Color::BACKGROUND);
-    }
-    if b.is_down(Key::Ctrl) {
-        buf[a.idx([1, 5])] =
-            CharCell::new('C', X256Color::BLUE, X256Color::BACKGROUND);
-    }
-    if b.is_down(Key::Alt) {
-        buf[a.idx([1, 6])] =
-            CharCell::new('A', X256Color::BLUE, X256Color::BACKGROUND);
-    }
-    if b.is_down(Key::Icon) {
-        buf[a.idx([1, 7])] =
-            CharCell::new('I', X256Color::BLUE, X256Color::BACKGROUND);
-    }
-
     // Draw colorful stuff.
     for [x, y] in area(16, 16).into_iter() {
         let c = CharCell::new('@', X256Color(x as u8), X256Color(y as u8));
@@ -46,8 +29,13 @@ fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
     }
 
     for [x, y] in area(16, 16).into_iter() {
+        let mut c = (b' ' + ((x as u8 + y as u8 * 16) % 0x60)) as char;
+        // Fix the one unprintable char.
+        if c == 127 as char {
+            c = ' ';
+        }
         let c = CharCell::new(
-            (b' ' + ((x as u8 + y as u8 * 16) % 0x60)) as char,
+            c,
             X256Color((x + 16 * y) as u8),
             X256Color::BACKGROUND,
         );

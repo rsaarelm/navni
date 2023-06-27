@@ -14,4 +14,11 @@ or
 
     cargo run --features=gui --example demo
 
+## Obligatory screenshots
 
+GUI | TTY
+:---:|:---:
+![](img/gui-demo.png) | ![](img/tty-demo.png)
+textmode | textmode
+![](img/gui-img.png) | ![](img/tty-img.png)
+pixels | pixels
