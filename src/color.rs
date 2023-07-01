@@ -1,3 +1,5 @@
+use std::ops::{Mul, BitOrAssign};
+
 use memoize::memoize;
 use seq_macro::seq;
 use serde::{Deserialize, Serialize};
@@ -189,6 +191,32 @@ impl Rgba {
 impl From<X256Color> for Rgba {
     fn from(value: X256Color) -> Self {
         x256_to_rgba(value.0)
+    }
+}
+
+impl BitOrAssign for Rgba {
+    fn bitor_assign(&mut self, rhs: Self) {
+        // Hopefully the compiler is smart enough to produce optimal code for
+        // this. If not, we could unsafe-cast both to u64 and do a single op.
+        self.r |= rhs.r;
+        self.g |= rhs.g;
+        self.b |= rhs.b;
+        self.a |= rhs.a;
+    }
+}
+
+impl Mul for Rgba {
+    type Output = Rgba;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        // Add +1 so the range hits 65536 and goes back to 256 when shifted
+        // down. Otherwise 255 * 255 would end up 254.
+        Rgba {
+            r: ((((self.r as u16 + 1) * (rhs.r as u16 + 1)) >> 8) - 1) as u8,
+            g: ((((self.g as u16 + 1) * (rhs.g as u16 + 1)) >> 8) - 1) as u8,
+            b: ((((self.b as u16 + 1) * (rhs.b as u16 + 1)) >> 8) - 1) as u8,
+            a: ((((self.a as u16 + 1) * (rhs.a as u16 + 1)) >> 8) - 1) as u8,
+        }
     }
 }
 
