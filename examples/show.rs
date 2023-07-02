@@ -6,7 +6,7 @@ type GameData = image::RgbaImage;
 fn show(
     game: &mut GameData,
     b: &mut dyn Backend,
-    n: u32,
+    _: u32,
 ) -> Option<StackOp<GameData>> {
     match b.mouse_state() {
         MouseState::Pressed(
