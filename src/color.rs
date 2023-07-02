@@ -1,4 +1,4 @@
-use std::ops::{Mul, BitOrAssign};
+use std::ops::{BitAndAssign, BitOrAssign, Mul};
 
 use memoize::memoize;
 use seq_macro::seq;
@@ -202,6 +202,15 @@ impl BitOrAssign for Rgba {
         self.g |= rhs.g;
         self.b |= rhs.b;
         self.a |= rhs.a;
+    }
+}
+
+impl BitAndAssign for Rgba {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.r &= rhs.r;
+        self.g &= rhs.g;
+        self.b &= rhs.b;
+        self.a &= rhs.a;
     }
 }
 
