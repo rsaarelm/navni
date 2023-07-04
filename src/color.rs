@@ -188,6 +188,18 @@ impl Rgba {
     pub const YELLOW_GREEN: Rgba = Rgba::new(0x9a, 0xcd, 0x32, 0xff);
 }
 
+impl From<image::Rgba<u8>> for Rgba {
+    fn from(value: image::Rgba<u8>) -> Self {
+        Rgba::new(value[0], value[1], value[2], value[3])
+    }
+}
+
+impl Into<image::Rgba<u8>> for Rgba {
+    fn into(self) -> image::Rgba<u8> {
+        image::Rgba([self.r, self.g, self.b, self.a])
+    }
+}
+
 impl From<X256Color> for Rgba {
     fn from(value: X256Color) -> Self {
         x256_to_rgba(value.0)
