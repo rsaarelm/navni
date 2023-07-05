@@ -199,12 +199,22 @@ impl<T: Element, const N: usize> Orthotope<T, N> {
         self.p1[2] - self.p0[2]
     }
 
-    pub fn inflate(&self, amount: impl Into<[T; N]>) -> Self {
-        let amount = amount.into();
+    /// Grow the orthotope, with parametrization for every facet.
+    ///
+    /// The first argument specifies expansion amounts of the "lower" facets
+    /// opposite to the coordinate axes. The second specifies expansion of the
+    /// "upper" facets pointing in the same direction as the coordinate axes.
+    pub fn grow<U: Into<[T; N]>>(
+        &self,
+        lower_amount: U,
+        upper_amount: U,
+    ) -> Self {
+        let lower_amount = lower_amount.into();
+        let upper_amount = upper_amount.into();
         let (mut p0, mut p1) = (self.p0, self.p1);
         for i in 0..N {
-            p0[i] = p0[i] - amount[i];
-            p1[i] = p1[i] + amount[i];
+            p0[i] = p0[i] - lower_amount[i];
+            p1[i] = p1[i] + upper_amount[i];
         }
 
         Orthotope::new(p0, p1)
