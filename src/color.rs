@@ -235,13 +235,11 @@ impl Mul for Rgba {
     type Output = Rgba;
 
     fn mul(self, rhs: Self) -> Self::Output {
-        // Add +1 so the range hits 65536 and goes back to 256 when shifted
-        // down. Otherwise 255 * 255 would end up 254.
         Rgba {
-            r: ((((self.r as u16 + 1) * (rhs.r as u16 + 1)) >> 8) - 1) as u8,
-            g: ((((self.g as u16 + 1) * (rhs.g as u16 + 1)) >> 8) - 1) as u8,
-            b: ((((self.b as u16 + 1) * (rhs.b as u16 + 1)) >> 8) - 1) as u8,
-            a: ((((self.a as u16 + 1) * (rhs.a as u16 + 1)) >> 8) - 1) as u8,
+            r: (((self.r as u16) * (rhs.r as u16)) / 255) as u8,
+            g: (((self.g as u16) * (rhs.g as u16)) / 255) as u8,
+            b: (((self.b as u16) * (rhs.b as u16)) / 255) as u8,
+            a: (((self.a as u16) * (rhs.a as u16)) / 255) as u8,
         }
     }
 }
@@ -346,5 +344,18 @@ const fn x256_to_rgba(c: u8) -> Rgba {
             let c = 8 + 10 * x;
             Rgba::new(c, c, c, 0xff)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn color_mul() {
+        assert_eq!(Rgba::BLACK * Rgba::BLACK, Rgba::BLACK);
+        assert_eq!(Rgba::WHITE * Rgba::WHITE, Rgba::WHITE);
+        assert_eq!(Rgba::WHITE * Rgba::RED, Rgba::RED);
+        assert_eq!(Rgba::BLACK * Rgba::RED, Rgba::BLACK);
     }
 }
