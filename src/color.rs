@@ -39,6 +39,11 @@ impl Rgba {
         (2.0 + rm) * dr * dr + 4.0 * dg * dg + (3.0 - rm) * db * db + da * da
     }
 
+    #[inline(always)]
+    pub fn is_transparent(&self) -> bool {
+        self.a == 0
+    }
+
     // SVG named colors.
     pub const ALICE_BLUE: Rgba = Rgba::new(0xf0, 0xf8, 0xff, 0xff);
     pub const ANTIQUE_WHITE: Rgba = Rgba::new(0xfa, 0xeb, 0xd7, 0xff);
