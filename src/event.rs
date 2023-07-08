@@ -1,7 +1,6 @@
 use std::{fmt, str::FromStr};
 
 use anyhow::anyhow;
-use glam::IVec2;
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 /// Key event value.
@@ -259,31 +258,13 @@ pub enum MouseButton {
 /// Initial position and button for a pressed-down mouse.
 #[derive(Copy, Clone, Debug)]
 pub struct MousePress {
-    pub pos: IVec2,
+    pub pos: [i32; 2],
     pub button: MouseButton,
 }
 
 impl MousePress {
-    pub fn new(pos: IVec2, button: MouseButton) -> Self {
+    pub fn new(pos: [i32; 2], button: MouseButton) -> Self {
         MousePress { pos, button }
-    }
-}
-
-impl std::ops::Add<IVec2> for MousePress {
-    type Output = MousePress;
-
-    fn add(mut self, rhs: IVec2) -> Self::Output {
-        self.pos += rhs;
-        self
-    }
-}
-
-impl std::ops::Sub<IVec2> for MousePress {
-    type Output = MousePress;
-
-    fn sub(mut self, rhs: IVec2) -> Self::Output {
-        self.pos -= rhs;
-        self
     }
 }
 
@@ -291,13 +272,13 @@ impl std::ops::Sub<IVec2> for MousePress {
 #[derive(Copy, Clone, Debug)]
 pub enum MouseState {
     /// Cursor at location, no mouse button pressed.
-    Unpressed(IVec2),
+    Unpressed([i32; 2]),
     /// Cursor at location with a mouse button held down.
-    Pressed(IVec2, MousePress),
+    Pressed([i32; 2], MousePress),
     /// Cursor at location with a mouse button having just been released.
-    Released(IVec2, MousePress),
+    Released([i32; 2], MousePress),
     /// Scroll wheel scrolled. +1 is down, -1 is up.
-    Scrolled(IVec2, i32),
+    Scrolled([i32; 2], i32),
 }
 
 use MouseState::*;
@@ -309,7 +290,7 @@ impl Default for MouseState {
 }
 
 impl MouseState {
-    pub fn cursor_pos(&self) -> IVec2 {
+    pub fn cursor_pos(&self) -> [i32; 2] {
         match self {
             Unpressed(p) => *p,
             Pressed(p, _) => *p,
@@ -318,7 +299,7 @@ impl MouseState {
         }
     }
 
-    pub(crate) fn cursor_pos_mut(&mut self) -> &mut IVec2 {
+    pub(crate) fn cursor_pos_mut(&mut self) -> &mut [i32; 2] {
         match self {
             Unpressed(p) => p,
             Pressed(p, _) => p,
@@ -327,7 +308,7 @@ impl MouseState {
         }
     }
 
-    pub fn press_pos(&self) -> Option<IVec2> {
+    pub fn press_pos(&self) -> Option<[i32; 2]> {
         match self {
             Unpressed(_) => None,
             Pressed(_, s) => Some(s.pos),
@@ -375,34 +356,6 @@ impl MouseState {
     pub(crate) fn frame_update(&mut self) {
         if let Released(p, _) | Scrolled(p, _) = self {
             *self = Unpressed(*p);
-        }
-    }
-}
-
-impl std::ops::Add<IVec2> for MouseState {
-    type Output = MouseState;
-
-    fn add(self, rhs: IVec2) -> Self::Output {
-        use MouseState::*;
-        match self {
-            Unpressed(p) => Unpressed(p + rhs),
-            Pressed(p, s) => Pressed(p + rhs, s + rhs),
-            Released(p, s) => Released(p + rhs, s + rhs),
-            Scrolled(p, z) => Scrolled(p + rhs, z),
-        }
-    }
-}
-
-impl std::ops::Sub<IVec2> for MouseState {
-    type Output = MouseState;
-
-    fn sub(self, rhs: IVec2) -> Self::Output {
-        use MouseState::*;
-        match self {
-            Unpressed(p) => Unpressed(p - rhs),
-            Pressed(p, s) => Pressed(p - rhs, s - rhs),
-            Released(p, s) => Released(p - rhs, s - rhs),
-            Scrolled(p, z) => Scrolled(p - rhs, z),
         }
     }
 }

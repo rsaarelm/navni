@@ -115,10 +115,8 @@ impl<T> EventHandler for Runtime<T> {
     }
 
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
-        let (x, y) = self.gui.transform_mouse_pos(x, y);
-        // TODO: Transform coordinates based on whatever was rendered last
-        // frame.
-        *self.gui.mouse_state.cursor_pos_mut() = (x, y).into();
+        *self.gui.mouse_state.cursor_pos_mut() =
+            self.gui.transform_mouse_pos(x, y);
     }
 
     fn mouse_wheel_event(&mut self, _x: f32, y: f32) {
@@ -395,11 +393,11 @@ impl GuiBackend {
         ret
     }
 
-    fn transform_mouse_pos(&self, x: f32, y: f32) -> (i32, i32) {
-        (
+    fn transform_mouse_pos(&self, x: f32, y: f32) -> [i32; 2] {
+        [
             (x as i32 - self.mouse_offset.0) / self.mouse_scale.0,
             (y as i32 - self.mouse_offset.1) / self.mouse_scale.1,
-        )
+        ]
     }
 
     fn convert_color(&self, c: X256Color) -> Rgba {

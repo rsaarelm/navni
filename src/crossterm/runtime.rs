@@ -9,7 +9,6 @@ use crate::{
     MouseState, Rgba, Scene, X256Color, FRAME_DURATION, MAX_UPDATES_PER_FRAME,
 };
 use crossterm::{cursor, event, queue, style, terminal, QueueableCommand};
-use glam::{ivec2, IVec2};
 use signal_hook::{consts::SIGTERM, iterator::Signals};
 
 // Used for hacking up the fake key held detector. This part is fragile, we
@@ -68,15 +67,15 @@ struct TtyBackend {
 }
 
 struct MouseTransform {
-    offset: IVec2,
-    scale: IVec2,
+    offset: [i32; 2],
+    scale: [i32; 2],
 }
 
 impl Default for MouseTransform {
     fn default() -> Self {
         MouseTransform {
-            offset: Default::default(),
-            scale: ivec2(1, 1),
+            offset: [0, 0],
+            scale: [1, 1],
         }
     }
 }
@@ -177,10 +176,10 @@ impl TtyBackend {
                         self.mouse_state.button_up(button.into());
                     }
                     event::MouseEventKind::Drag(_) => {
-                        *self.mouse_state.cursor_pos_mut() = (x, y).into();
+                        *self.mouse_state.cursor_pos_mut() = [x, y];
                     }
                     event::MouseEventKind::Moved => {
-                        *self.mouse_state.cursor_pos_mut() = (x, y).into();
+                        *self.mouse_state.cursor_pos_mut() = [x, y];
                     }
                     event::MouseEventKind::ScrollDown => {
                         self.mouse_state.scroll(1);
@@ -256,13 +255,13 @@ impl Backend for TtyBackend {
 
         // Set scaling to account for the fake y axis doubling. Do the setting
         // here because draw_chars will also set inv_scale.
-        self.mouse_transform.scale = ivec2(1, 2);
+        self.mouse_transform.scale = [1, 2];
     }
 
     fn draw_chars(&mut self, w: u32, h: u32, buffer: &[CharCell]) {
         assert!(buffer.len() == (w * h) as usize);
 
-        self.mouse_transform.scale = ivec2(1, 1);
+        self.mouse_transform.scale = [1, 1];
 
         let mut stdout = std::io::stdout();
 
@@ -291,7 +290,7 @@ impl Backend for TtyBackend {
         };
 
         // Adjust mouse pos for the small buffer.
-        self.mouse_transform.offset = ivec2(x_offset as i32, y_offset as i32);
+        self.mouse_transform.offset = [x_offset as i32, y_offset as i32];
 
         let mut prev_cell = CharCell {
             c: 0xffff,
@@ -421,8 +420,10 @@ impl Backend for TtyBackend {
 
     fn mouse_state(&self) -> MouseState {
         let mut ret = self.mouse_state;
-        *ret.cursor_pos_mut() -= self.mouse_transform.offset;
-        *ret.cursor_pos_mut() *= self.mouse_transform.scale;
+        let [x, y] = ret.cursor_pos();
+        let [ox, oy] = self.mouse_transform.offset;
+        let [sx, sy] = self.mouse_transform.scale;
+        *ret.cursor_pos_mut() = [(x - ox) * sx, (y - oy) * sy];
 
         ret
     }

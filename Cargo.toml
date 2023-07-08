@@ -17,7 +17,6 @@ tty = ["crossterm", "signal-hook", "syslog"]
 [dependencies]
 anyhow = "1"
 derive_deref = "1"
-glam = { version = "0.24", features = ["serde"] }
 image = "0.24"
 log = "0.4"
 memoize = "0.4"

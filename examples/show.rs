@@ -18,8 +18,8 @@ fn show(
         ) => {
             if area(game.width() as i32, game.height() as i32).contains(pos) {
                 game.put_pixel(
-                    pos.x as u32,
-                    pos.y as u32,
+                    pos[0] as u32,
+                    pos[1] as u32,
                     image::Rgba([0xff, 0, 0xff, 0xff]),
                 );
             }
