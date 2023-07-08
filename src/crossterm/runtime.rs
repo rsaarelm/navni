@@ -176,10 +176,12 @@ impl TtyBackend {
                         self.mouse_state.button_up(button.into());
                     }
                     event::MouseEventKind::Drag(_) => {
-                        *self.mouse_state.cursor_pos_mut() = [x, y];
+                        *self.mouse_state.cursor_pos_mut() =
+                            self.transform_mouse_pos([x, y]);
                     }
                     event::MouseEventKind::Moved => {
-                        *self.mouse_state.cursor_pos_mut() = [x, y];
+                        *self.mouse_state.cursor_pos_mut() =
+                            self.transform_mouse_pos([x, y]);
                     }
                     event::MouseEventKind::ScrollDown => {
                         self.mouse_state.scroll(1);
@@ -228,6 +230,12 @@ impl TtyBackend {
 
     fn elapsed_since_last_update(&self) -> f64 {
         now() - self.last_update
+    }
+
+    fn transform_mouse_pos(&self, [x, y]: [i32; 2]) -> [i32; 2] {
+        let [ox, oy] = self.mouse_transform.offset;
+        let [sx, sy] = self.mouse_transform.scale;
+        [(x - ox) * sx, (y - oy) * sy]
     }
 }
 
@@ -406,13 +414,7 @@ impl Backend for TtyBackend {
     }
 
     fn mouse_state(&self) -> MouseState {
-        let mut ret = self.mouse_state;
-        let [x, y] = ret.cursor_pos();
-        let [ox, oy] = self.mouse_transform.offset;
-        let [sx, sy] = self.mouse_transform.scale;
-        *ret.cursor_pos_mut() = [(x - ox) * sx, (y - oy) * sy];
-
-        ret
+        self.mouse_state
     }
 }
 
