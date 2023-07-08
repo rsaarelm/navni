@@ -5,8 +5,8 @@ use std::{
 };
 
 use crate::{
-    area, scene::SceneStack, Backend, CharCell, Config, Key, KeyTyped,
-    MouseState, Rgba, Scene, X256Color, FRAME_DURATION, MAX_UPDATES_PER_FRAME,
+    scene::SceneStack, Backend, CharCell, Config, Key, KeyTyped, MouseState,
+    Rgba, Scene, X256Color, FRAME_DURATION, MAX_UPDATES_PER_FRAME,
 };
 use crossterm::{cursor, event, queue, style, terminal, QueueableCommand};
 use signal_hook::{consts::SIGTERM, iterator::Signals};
@@ -233,20 +233,13 @@ impl TtyBackend {
 
 impl Backend for TtyBackend {
     fn draw_pixels(&mut self, w: u32, h: u32, buffer: &[Rgba]) {
-        // Pixel space.
-        let p = area(w, h);
-
-        // Char cell space.
-        let c = area(w, h / 2);
-
-        let cells: Vec<CharCell> = c
-            .into_iter()
-            .map(|[u, v]| {
-                let (x, y) = (u, v * 2);
+        let cells: Vec<CharCell> = (0..w * h / 2)
+            .map(|i| {
+                let (x, y) = (i % w, (i / w) * 2);
                 CharCell::new(
                     '▀',
-                    buffer[p.idx([x, y])],
-                    buffer[p.idx([x, y + 1])],
+                    buffer[(x + y * w) as usize],
+                    buffer[(x + (y + 1) * w) as usize],
                 )
             })
             .collect();
@@ -265,16 +258,10 @@ impl Backend for TtyBackend {
 
         let mut stdout = std::io::stdout();
 
-        // Buffer area, use for indexing.
-        let b = area(w, h);
-
         if self.prev_buffer.0 != w || self.prev_buffer.1 != h {
             // Clear the screen after a resize.
             queue!(stdout, terminal::Clear(terminal::ClearType::All),).unwrap();
         }
-
-        // Display area, may be smaller than buffer.
-        let a = area(w.min(self.size.0), h.min(self.size.1));
 
         // Center the buffer if it's smaller than the screen.
         let x_offset = if w < self.size.0 {
@@ -299,14 +286,14 @@ impl Backend for TtyBackend {
 
         let mut made_changes = false;
 
-        for y in 0..a.height() {
+        for y in 0..h.min(self.size.1) {
             let mut need_goto = true;
-            for x in 0..a.width() {
+            for x in 0..w.min(self.size.0) {
                 // Skip drawing cells that didn't change from previous frame.
                 if self.prev_buffer.0 == w
                     && self.prev_buffer.1 == h
-                    && self.prev_buffer.2[b.idx([x, y])]
-                        == buffer[b.idx([x, y])]
+                    && self.prev_buffer.2[(x + y * w) as usize]
+                        == buffer[(x + y * w) as usize]
                 {
                     need_goto = true;
                     continue;
@@ -327,7 +314,7 @@ impl Backend for TtyBackend {
                     need_goto = false;
                 }
 
-                let cell = buffer[b.idx([x, y])];
+                let cell = buffer[(x + y * w) as usize];
 
                 let color_changed = prev_cell.c == 0xffff
                     || cell.foreground != prev_cell.foreground

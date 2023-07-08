@@ -1,63 +1,73 @@
 use navni::prelude::*;
 
 fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
-    let a = area(80, 24);
-    let mut buf: Vec<CharCell> = vec![Default::default(); a.volume() as usize];
+    const W: usize = 80;
+    const H: usize = 24;
+
+    let mut buf: Vec<CharCell> = vec![Default::default(); W * H];
 
     // Demonstrate the key down check function.
     if b.is_down(Key::Char('w')) || b.is_down(Key::Up) {
-        buf[a.idx([1, 0])] =
+        buf[1 + 0 * W] =
             CharCell::new('^', X256Color::LIME, X256Color::BACKGROUND);
     }
     if b.is_down(Key::Char('a')) || b.is_down(Key::Left) {
-        buf[a.idx([0, 1])] =
+        buf[0 + 1 * W] =
             CharCell::new('<', X256Color::LIME, X256Color::BACKGROUND);
     }
     if b.is_down(Key::Char('s')) || b.is_down(Key::Down) {
-        buf[a.idx([1, 1])] =
+        buf[1 + 1 * W] =
             CharCell::new('v', X256Color::LIME, X256Color::BACKGROUND);
     }
     if b.is_down(Key::Char('d')) || b.is_down(Key::Right) {
-        buf[a.idx([2, 1])] =
+        buf[2 * 1 * W] =
             CharCell::new('>', X256Color::LIME, X256Color::BACKGROUND);
     }
 
     // Draw colorful stuff.
-    for [x, y] in area(16, 16).into_iter() {
-        let c = CharCell::new('@', X256Color(x as u8), X256Color(y as u8));
-        buf[a.idx([x + 2, y + 2])] = c;
-    }
-
-    for [x, y] in area(16, 16).into_iter() {
-        let mut c = (b' ' + ((x as u8 + y as u8 * 16) % 0x60)) as char;
-        // Fix the one unprintable char.
-        if c == 127 as char {
-            c = ' ';
+    for y in 0..16 {
+        for x in 0..16 {
+            let c = CharCell::new('@', X256Color(x as u8), X256Color(y as u8));
+            buf[x + 2 + (y + 2) * W] = c;
         }
-        let c = CharCell::new(
-            c,
-            X256Color((x + 16 * y) as u8),
-            X256Color::BACKGROUND,
-        );
-        buf[a.idx([x + 20, y + 2])] = c;
     }
 
-    for [x, y] in area(16, 16).into_iter() {
-        let c = CharCell::new(
-            '@',
-            X256Color::FOREGROUND,
-            X256Color((x + 16 * y) as u8),
-        );
-        buf[a.idx([x + 38, y + 2])] = c;
+    for y in 0..16 {
+        for x in 0..16 {
+            let mut c = (b' ' + ((x as u8 + y as u8 * 16) % 0x60)) as char;
+            // Fix the one unprintable char.
+            if c == 127 as char {
+                c = ' ';
+            }
+            let c = CharCell::new(
+                c,
+                X256Color((x + 16 * y) as u8),
+                X256Color::BACKGROUND,
+            );
+            buf[x + 20 + (y + 2) * W] = c;
+        }
     }
 
-    for [x, y] in area(16, 16).into_iter() {
-        let c = CharCell::new(
-            '@',
-            X256Color::BACKGROUND,
-            X256Color((x + 16 * y) as u8),
-        );
-        buf[a.idx([x + 56, y + 2])] = c;
+    for y in 0..16 {
+        for x in 0..16 {
+            let c = CharCell::new(
+                '@',
+                X256Color::FOREGROUND,
+                X256Color((x + 16 * y) as u8),
+            );
+            buf[x + 38 + (y + 2) * W] = c;
+        }
+    }
+
+    for y in 0..16 {
+        for x in 0..16 {
+            let c = CharCell::new(
+                '@',
+                X256Color::BACKGROUND,
+                X256Color((x + 16 * y) as u8),
+            );
+            buf[x + 56 + (y + 2) * W] = c;
+        }
     }
 
     match b.mouse_state() {
@@ -68,8 +78,12 @@ fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
                 ..
             },
         ) => {
-            if a.contains(pos) {
-                buf[a.idx(pos)] = CharCell::new(
+            if pos[0] >= 0
+                && pos[1] >= 0
+                && pos[0] < W as i32
+                && pos[1] < H as i32
+            {
+                buf[pos[0] as usize + W * pos[1] as usize] = CharCell::new(
                     ' ',
                     X256Color::FOREGROUND,
                     X256Color::FUCHSIA,
@@ -88,7 +102,7 @@ fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
         _ => {}
     }
 
-    b.draw_chars(a.width() as u32, a.height() as u32, &buf);
+    b.draw_chars(W as u32, H as u32, &buf);
 
     if b.keypress().key() == Key::Esc {
         return Some(StackOp::Pop);

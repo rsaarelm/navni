@@ -25,10 +25,6 @@ pub use interface::{Backend, CharCell};
 
 pub mod logger;
 
-pub mod orthotope;
-pub use orthotope::area;
-pub type Rect = orthotope::Rect<i32>;
-
 pub mod prelude;
 
 mod scene;
