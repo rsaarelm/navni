@@ -37,7 +37,5 @@ syslog = { version = "6", optional = true }
 wasm-logger = "0.2"
 
 [dev-dependencies]
-fraction = "0.13"
-lazy_static = "1"
 quickcheck = "1"
 quickcheck_macros = "1"
