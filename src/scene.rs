@@ -14,7 +14,7 @@ pub enum StackOp<T> {
 
 /// A single scene screen. Scenes operate on a shared game data value.
 pub trait Scene<T> {
-    /// Update and draw the scene. The scene draws itself to the navni
+    /// Update and draw the scene. The scene draws itself to the Navni
     /// backend. `n_updates` tells how many times the game state should be
     /// updated during this update to keep a consistent update pace. If
     /// updating or rendering is slow, `n_updates` will start going up.

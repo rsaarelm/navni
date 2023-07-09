@@ -7,7 +7,7 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 ///
 /// NB. shift modifier is always set to false when `key` is `Char(_)`, since
 /// shift is redundant with the capitalization of the printable character and
-/// adding the flag makes is difficult to interoperate with navni backends
+/// adding the flag makes is difficult to interoperate with Navni backends
 /// that do not capture the shift modifier.
 #[derive(
     Copy,
