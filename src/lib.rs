@@ -11,6 +11,9 @@ pub const MAX_UPDATES_PER_FRAME: u32 = 30;
 mod backend;
 pub use backend::run;
 
+mod char_cell;
+pub use char_cell::CharCell;
+
 mod color;
 pub use color::{Rgba, X256Color};
 
@@ -21,7 +24,7 @@ mod event;
 pub use event::{Key, KeyMods, KeyTyped, MouseButton, MousePress, MouseState};
 
 mod interface;
-pub use interface::{Backend, CharCell};
+pub use interface::Backend;
 
 pub mod logger;
 
