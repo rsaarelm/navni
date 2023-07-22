@@ -25,9 +25,8 @@ serde = { version = "1", features = ["derive"] }
 serde_with = "3"
 
 env_logger = { version = "0.10", optional = true }
-# TODO: Go back to using a crates version once it's released with the fixes I rely on.
-# miniquad = { version = "0.4", optional = true }
-miniquad = { git = "https://github.com/not-fl3/miniquad", branch = "master", optional = true }
+# TODO: Use stable 0.4 once it's out.
+miniquad = { version = "0.4.0-alpha.5", optional = true }
 
 crossterm = { version = "0.26", optional = true }
 signal-hook = { version = "0.3", optional = true }
