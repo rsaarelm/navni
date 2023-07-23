@@ -20,7 +20,7 @@ fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
             CharCell::new('v', X256Color::LIME, X256Color::BACKGROUND);
     }
     if b.is_down(Key::Char('d')) || b.is_down(Key::Right) {
-        buf[2 * 1 * W] =
+        buf[2 + 1 * W] =
             CharCell::new('>', X256Color::LIME, X256Color::BACKGROUND);
     }
 
