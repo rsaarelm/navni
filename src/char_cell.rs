@@ -1,4 +1,4 @@
-use crate::X256Color;
+use crate::{Rgba, X256Color};
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct CharCell {
@@ -23,6 +23,12 @@ impl Default for CharCell {
 impl From<char> for CharCell {
     fn from(c: char) -> Self {
         CharCell::new(c, X256Color::FOREGROUND, X256Color::BACKGROUND)
+    }
+}
+
+impl From<Rgba> for CharCell {
+    fn from(value: Rgba) -> Self {
+        CharCell::new('█', value, X256Color::BACKGROUND)
     }
 }
 
