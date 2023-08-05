@@ -1,6 +1,5 @@
 use std::ops::{BitAndAssign, BitOrAssign, Mul};
 
-use memoize::memoize;
 use seq_macro::seq;
 use serde::{Deserialize, Serialize};
 
@@ -37,6 +36,12 @@ impl Rgba {
         let rm = (f(self.r) + f(other.r)) / 2.0;
 
         (2.0 + rm) * dr * dr + 4.0 * dg * dg + (3.0 - rm) * db * db + da * da
+    }
+
+    pub fn greyscale(&self) -> u8 {
+        ((0.2126 * self.r as f32)
+            + (0.7152 * self.g as f32)
+            + (0.0722 * self.b as f32)) as u8
     }
 
     #[inline(always)]
@@ -293,23 +298,28 @@ impl X256Color {
 }
 
 impl From<Rgba> for X256Color {
-    fn from(value: Rgba) -> Self {
-        rgba_to_x256(value)
-    }
-}
+    fn from(col: Rgba) -> Self {
+        // Snap 256-value component to closest x256 6-value component.
+        fn c(x: u8) -> u8 {
+            (((x as i32) - 35) / 40).max(0) as u8
+        }
 
-#[memoize(Capacity: 65536)]
-fn rgba_to_x256(col: Rgba) -> X256Color {
-    // NB. f32 values can't be used with min_by_key since they don't have Ord.
-    // However, we can use the hack where binary representations of positive
-    // floats should be order-preserving when interpreted as integers.
-    X256Color(
-        (16..=255)
-            .min_by_key(|&i| {
-                X256Color::PALETTE[i as usize].square_dist(&col).to_bits()
-            })
-            .unwrap(),
-    )
+        // 6x6x6 chromatic color
+        let c1 = 16 + c(col.r) * 36 + c(col.g) * 6 + c(col.b);
+        // greyscale slide color
+        let c2 =
+            232 + (((col.greyscale() as i32 - 3) / 10).max(0).min(23) as u8);
+
+        X256Color(
+            if x256_to_rgba(c1).square_dist(&col)
+                < x256_to_rgba(c2).square_dist(&col)
+            {
+                c1
+            } else {
+                c2
+            },
+        )
+    }
 }
 
 const fn x256_to_rgba(c: u8) -> Rgba {
