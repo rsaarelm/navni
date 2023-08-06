@@ -1,19 +1,18 @@
-//!
 //! Runner for a platform-appropriate logging backend.
 //!
-//! TTY programs can't use logging to stdout so they need to be debugged with
-//! the env logger.
+//! TTY programs use stdout for logging so they need to be debugged via
+//! syslog.
 
 // TODO: WASM logging
-#[cfg_attr(
-    all(feature = "gui", target_arch = "wasm32"),
-    path = "null_logger.rs"
-)]
+//#[cfg_attr(
+//    all(feature = "gui", target_arch = "wasm32"),
+//    path = "wasm_logger.rs"
+//)]
 // TODO: Windows logging
-#[cfg_attr(
-    all(feature = "gui", target_os = "windows"),
-    path = "null_logger.rs"
-)]
+//#[cfg_attr(
+//    all(feature = "gui", target_os = "windows"),
+//    path = "win_logger.rs"
+//)]
 #[cfg_attr(
     all(
         feature = "gui",
