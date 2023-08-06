@@ -16,7 +16,7 @@ tty = ["crossterm", "signal-hook", "syslog"]
 
 [dependencies]
 anyhow = "1"
-image = "0.24"
+image = { version = "0.24", default-features = false, features = ["png"] }
 log = "0.4"
 rustc-hash = "1"
 seq-macro = "0.3"
