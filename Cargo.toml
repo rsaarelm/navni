@@ -27,7 +27,7 @@ env_logger = { version = "0.10", optional = true }
 # TODO: Use stable 0.4 once it's out.
 miniquad = { version = "0.4.0-alpha.6", optional = true }
 
-crossterm = { version = "0.26", optional = true }
+crossterm = { version = "0.27", optional = true }
 signal-hook = { version = "0.3", optional = true }
 syslog = { version = "6", optional = true }
 

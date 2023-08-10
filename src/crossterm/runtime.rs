@@ -189,6 +189,8 @@ impl TtyBackend {
                     event::MouseEventKind::ScrollUp => {
                         self.mouse_state.scroll(-1);
                     }
+                    event::MouseEventKind::ScrollLeft => {}
+                    event::MouseEventKind::ScrollRight => {}
                 }
             }
             event::Event::Resize(w, h) => {
