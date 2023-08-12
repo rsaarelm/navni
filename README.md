@@ -19,6 +19,6 @@ or
 GUI | TTY
 :---:|:---:
 ![](img/gui-demo.png) | ![](img/tty-demo.png)
-textmode | textmode
+characters | characters
 ![](img/gui-img.png) | ![](img/tty-img.png)
 pixels | pixels
