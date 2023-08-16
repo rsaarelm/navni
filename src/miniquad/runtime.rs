@@ -15,6 +15,8 @@ pub fn run<T: 'static>(
     let config = config.clone();
     let mut mq_config = conf::Conf::default();
     mq_config.window_title = config.window_title.clone();
+    mq_config.window_width = 1280;
+    mq_config.window_height = 720;
 
     miniquad::start(mq_config, move || {
         Box::new(Runtime::new(&config, game, SceneStack::new(scene)))
