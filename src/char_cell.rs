@@ -55,4 +55,21 @@ impl CharCell {
             background,
         }
     }
+
+    /// Create default-colored `CharCell` with given char.
+    pub fn c(c: char) -> Self {
+        CharCell::new(c, X256Color::FOREGROUND, X256Color::BACKGROUND)
+    }
+
+    /// Set foreground color of cell.
+    pub fn col(mut self, foreground: impl Into<X256Color>) -> Self {
+        self.foreground = foreground.into();
+        self
+    }
+
+    /// Swap background and foreground colors of cell.
+    pub fn inv(mut self) -> Self {
+        std::mem::swap(&mut self.foreground, &mut self.background);
+        self
+    }
 }
