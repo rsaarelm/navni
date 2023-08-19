@@ -524,6 +524,10 @@ impl Backend for GuiBackend {
         (w / self.font_size.0, h / self.font_size.1)
     }
 
+    fn is_gui(&self) -> bool {
+        true
+    }
+
     fn now(&self) -> f64 {
         self.last_update
     }

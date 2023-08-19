@@ -19,6 +19,10 @@ pub trait Backend {
     /// Return char cell resolution of backend, depends on font size.
     fn char_resolution(&self) -> (u32, u32);
 
+    fn is_gui(&self) -> bool {
+        false
+    }
+
     /// Return current time in seconds starting from an unspecified epoch.
     fn now(&self) -> f64;
 
