@@ -381,6 +381,20 @@ impl GuiBackend {
         (x / w, y / h)
     }
 
+    fn clear(&mut self) {
+        let clear_color = if let Some(pal) = self.system_colors {
+            (
+                pal[0].r as f32 / 255.0,
+                pal[0].g as f32 / 255.0,
+                pal[0].b as f32 / 255.0,
+                pal[0].a as f32 / 255.0,
+            )
+        } else {
+            (0.0, 0.0, 0.0, 0.0)
+        };
+        self.gl.clear(Some(clear_color), None, None);
+    }
+
     fn char_canvas_scale(
         &mut self,
         buffer_w: u32,
@@ -435,6 +449,7 @@ impl Backend for GuiBackend {
             canvas_scale,
         }));
 
+        self.clear();
         self.gl.draw(0, 6, 1);
         self.gl.end_render_pass();
         self.gl.commit_frame();
@@ -493,6 +508,7 @@ impl Backend for GuiBackend {
             canvas_scale,
         }));
 
+        self.clear();
         self.gl.draw(0, 6, 1);
         self.gl.end_render_pass();
         self.gl.commit_frame();
