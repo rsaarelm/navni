@@ -34,13 +34,8 @@ fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
 
     for y in 0..16 {
         for x in 0..16 {
-            let mut c = (b' ' + ((x as u8 + y as u8 * 16) % 0x60)) as char;
-            // Fix the one unprintable char.
-            if c == 127 as char {
-                c = ' ';
-            }
             let c = CharCell::new(
-                c,
+                navni::CODEPAGE_437[(x + y * 16) as usize],
                 X256Color((x + 16 * y) as u8),
                 X256Color::BACKGROUND,
             );
