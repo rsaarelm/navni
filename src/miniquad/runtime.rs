@@ -236,7 +236,7 @@ impl GuiBackend {
 
         let mut char_lookup = vec![0xff; 0x10000];
         for (i, &c) in font_chars.iter().enumerate() {
-            char_lookup[c as u32 as usize] = i as u8;
+            char_lookup[c as usize] = i as u8;
         }
 
         // Pixel buffer pixels.
