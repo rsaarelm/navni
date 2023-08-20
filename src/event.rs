@@ -111,6 +111,11 @@ impl KeyTyped {
     pub fn is(&self, code: &str) -> bool {
         *self == code.parse().unwrap()
     }
+
+    /// Convenience method, true if a non-modifier key was pressed.
+    pub fn is_some(&self) -> bool {
+        self.key != Key::None
+    }
 }
 
 #[derive(Copy, Clone, Default, Eq, PartialEq, Ord, PartialOrd, Hash, Debug)]
