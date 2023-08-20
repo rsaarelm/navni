@@ -38,22 +38,28 @@ impl CharCell {
         foreground: impl Into<X256Color>,
         background: impl Into<X256Color>,
     ) -> Self {
+        let foreground = foreground.into();
+        let background = background.into();
+
+        let mut ret = CharCell {
+            c: 0,
+            foreground,
+            background,
+        };
+
+        ret.set_c(c);
+        ret
+    }
+
+    pub fn set_c(&mut self, c: char) {
         let mut b = [0; 2];
-        let c = if c.encode_utf16(&mut b).len() == 2 {
+        self.c = if c.encode_utf16(&mut b).len() == 2 {
             // Error, char doesn't fit in a single UTF-16 cell.
             // 0xfffd = unicode replacement char
             0xfffd
         } else {
             b[0]
         };
-        let foreground = foreground.into();
-        let background = background.into();
-
-        CharCell {
-            c,
-            foreground,
-            background,
-        }
     }
 
     /// Create default-colored `CharCell` with given char.
