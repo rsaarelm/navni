@@ -629,7 +629,7 @@ uniform lowp vec2 terminal_size;
 void main() {
     // Reinterpret color channel in text texture as ASCII byte.
     lowp vec4 ch = texture2D(text, texcoord);
-    int chr = int(ch.x * 256.0);
+    int chr = int(ch.x * 255.0 + 0.5);
 
     // Top left corner of this character in font sheet.
     lowp float row = float(chr / 16) / 16.0;
