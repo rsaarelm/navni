@@ -260,37 +260,23 @@ pub enum MouseButton {
     Right,
 }
 
-/// Initial position and button for a pressed-down mouse.
-#[derive(Copy, Clone, Debug)]
-pub struct MousePress {
-    pub pos: [i32; 2],
-    pub button: MouseButton,
-}
-
-impl MousePress {
-    pub fn new(pos: [i32; 2], button: MouseButton) -> Self {
-        MousePress { pos, button }
-    }
-}
-
 /// Complex mouse state for IMGUI
 #[derive(Copy, Clone, Debug)]
 pub enum MouseState {
-    /// Cursor at location, no mouse button pressed.
-    Unpressed([i32; 2]),
-    /// Cursor at location with a mouse button held down.
-    Pressed([i32; 2], MousePress),
-    /// Cursor at location with a mouse button having just been released.
-    Released([i32; 2], MousePress),
-    /// Scroll wheel scrolled. +1 is down, -1 is up.
-    Scrolled([i32; 2], i32),
+    /// Mouse hovering over position with buttons unpressed.
+    Hover([i32; 2]),
+    /// `Drag(p, s, b)` Dragged from `s` to `p` with button `b down.
+    Drag([i32; 2], [i32; 2], MouseButton),
+    /// `Release(p, s, b)` Button `b` released over `p` after drag from `s`.
+    Release([i32; 2], [i32; 2], MouseButton),
+    /// Scroll wheel scrolled at position.
+    Scroll([i32; 2], i32),
 }
-
 use MouseState::*;
 
 impl Default for MouseState {
     fn default() -> Self {
-        Unpressed(Default::default())
+        Hover(Default::default())
     }
 }
 
@@ -301,35 +287,38 @@ impl From<MouseState> for [i32; 2] {
 }
 
 impl MouseState {
+    /// Return current mouse cursor position.
     pub fn cursor_pos(&self) -> [i32; 2] {
         match self {
-            Unpressed(p) => *p,
-            Pressed(p, _) => *p,
-            Released(p, _) => *p,
-            Scrolled(p, _) => *p,
+            Hover(p) => *p,
+            Drag(p, _, _) => *p,
+            Release(p, _, _) => *p,
+            Scroll(p, _) => *p,
         }
     }
 
     pub(crate) fn cursor_pos_mut(&mut self) -> &mut [i32; 2] {
         match self {
-            Unpressed(p) => p,
-            Pressed(p, _) => p,
-            Released(p, _) => p,
-            Scrolled(p, _) => p,
+            Hover(p) => p,
+            Drag(p, _, _) => p,
+            Release(p, _, _) => p,
+            Scroll(p, _) => p,
         }
     }
 
+    /// Return position where mouse button was first pressed down for `Drag`
+    /// and `Release` states.
     pub fn press_pos(&self) -> Option<[i32; 2]> {
         match self {
-            Unpressed(_) => None,
-            Pressed(_, s) => Some(s.pos),
-            Released(_, s) => Some(s.pos),
-            Scrolled(_, _) => None,
+            Hover(_) => None,
+            Drag(_, s, _) => Some(*s),
+            Release(_, s, _) => Some(*s),
+            Scroll(_, _) => None,
         }
     }
 
     pub fn scroll_delta(&self) -> i32 {
-        if let Scrolled(_, z) = self {
+        if let Scroll(_, z) = self {
             *z
         } else {
             0
@@ -338,21 +327,21 @@ impl MouseState {
 
     pub(crate) fn button_down(&mut self, button: MouseButton) {
         match self {
-            Unpressed(p) => *self = Pressed(*p, MousePress::new(*p, button)),
+            Hover(p) => *self = Drag(*p, *p, button),
             // Ignore new button presses when in pressed state.
-            Pressed(_, _) => {}
+            Drag(_, _, _) => {}
             // XXX: Also ignore new presses in release state because we don't
             // want to clobber the release state before the frame is over.
             // This can lead to actually missing input events if the user is
             // releasing and pressing buttons in very quick succession.
-            Released(_, _) => {}
-            Scrolled(p, _) => *self = Pressed(*p, MousePress::new(*p, button)),
+            Release(_, _, _) => {}
+            Scroll(p, _) => *self = Drag(*p, *p, button),
         }
     }
 
     pub(crate) fn button_up(&mut self, button: MouseButton) {
         match self {
-            Pressed(p, u) if button == u.button => *self = Released(*p, *u),
+            Drag(p, s, b) if button == *b => *self = Release(*p, *s, *b),
             _ => {}
         }
     }
@@ -360,13 +349,14 @@ impl MouseState {
     pub(crate) fn scroll(&mut self, z: i32) {
         debug_assert!(z == -1 || z == 1);
         let p = self.cursor_pos();
-        *self = Scrolled(p, z);
+        *self = Scroll(p, z);
     }
 
-    /// Update called every frame, exits the transient `Released` state.
+    /// Update called every frame, exits transient `Release` and `Scroll`
+    /// states.
     pub(crate) fn frame_update(&mut self) {
-        if let Released(p, _) | Scrolled(p, _) = self {
-            *self = Unpressed(*p);
+        if let Release(p, _, _) | Scroll(p, _) = self {
+            *self = Hover(*p);
         }
     }
 }

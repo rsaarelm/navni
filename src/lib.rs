@@ -21,7 +21,7 @@ mod config;
 pub use config::{Config, FontSheet, CODEPAGE_437};
 
 mod event;
-pub use event::{Key, KeyMods, KeyTyped, MouseButton, MousePress, MouseState};
+pub use event::{Key, KeyMods, KeyTyped, MouseButton, MouseState};
 
 mod interface;
 pub use interface::Backend;

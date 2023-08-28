@@ -66,13 +66,7 @@ fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
     }
 
     match b.mouse_state() {
-        MouseState::Pressed(
-            pos,
-            MousePress {
-                button: MouseButton::Left,
-                ..
-            },
-        ) => {
+        MouseState::Drag(pos, _, MouseButton::Left) => {
             if pos[0] >= 0
                 && pos[1] >= 0
                 && pos[0] < W as i32
@@ -85,13 +79,7 @@ fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
                 );
             }
         }
-        MouseState::Pressed(
-            _,
-            MousePress {
-                button: MouseButton::Right,
-                ..
-            },
-        ) => {
+        MouseState::Release(_, _, MouseButton::Right) => {
             return Some(StackOp::Pop);
         }
         _ => {}
