@@ -294,6 +294,12 @@ impl Default for MouseState {
     }
 }
 
+impl From<MouseState> for [i32; 2] {
+    fn from(value: MouseState) -> Self {
+        value.cursor_pos()
+    }
+}
+
 impl MouseState {
     pub fn cursor_pos(&self) -> [i32; 2] {
         match self {
