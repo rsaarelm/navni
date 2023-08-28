@@ -204,9 +204,9 @@ impl From<image::Rgba<u8>> for Rgba {
     }
 }
 
-impl Into<image::Rgba<u8>> for Rgba {
-    fn into(self) -> image::Rgba<u8> {
-        image::Rgba([self.r, self.g, self.b, self.a])
+impl From<Rgba> for image::Rgba<u8> {
+    fn from(val: Rgba) -> Self {
+        image::Rgba([val.r, val.g, val.b, val.a])
     }
 }
 
