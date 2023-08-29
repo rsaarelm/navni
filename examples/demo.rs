@@ -35,7 +35,7 @@ fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
     for y in 0..16 {
         for x in 0..16 {
             let c = CharCell::new(
-                navni::CODEPAGE_437[(x + y * 16) as usize],
+                navni::CODEPAGE_437[x + y * 16],
                 X256Color((x + 16 * y) as u8),
                 X256Color::BACKGROUND,
             );

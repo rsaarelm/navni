@@ -38,7 +38,7 @@ fn fractal(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
         }
     }
 
-    b.draw_pixels(w as u32, h as u32, &buf);
+    b.draw_pixels(w, h, &buf);
 
     if b.keypress().key() == Key::Esc {
         return Some(StackOp::Pop);
