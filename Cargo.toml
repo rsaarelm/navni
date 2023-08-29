@@ -3,6 +3,7 @@ name = "navni"
 version = "0.1.0"
 license = "MIT/Apache-2.0"
 authors = ["Risto Saarelma <risto.saarelma@iki.fi>"]
+exclude = ["githooks/", "flake.nix", "flake.lock", "Justfile", "img/", "web/"]
 edition = "2021"
 description = "Library for pixel or text graphics games"
 keywords = ["terminal", "gui", "gamedev"]
