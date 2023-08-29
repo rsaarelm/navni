@@ -14,6 +14,17 @@ or
 
     cargo run --features=gui --example demo
 
+## Features
+
+- Simple mouse and keyboard event handling.
+- Logging backend activator, use syslog logging with TTY builds where you
+  can't output extra lines to stdout and a stdout-based logger with Linux GUI
+  builds.
+- GUI builds can target WASM using miniquad's JavaScript webgl shim.
+- File system abstraction that provides machinery for saving and loading
+  config and data files that works both on desktop via the host file system
+  and in browser WASM builds via HTML Web Storage.
+
 ## Obligatory screenshots
 
 GUI | TTY
