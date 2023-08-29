@@ -28,6 +28,12 @@ pub use color::{Rgba, X256Color};
 mod config;
 pub use config::{Config, FontSheet, CODEPAGE_437};
 
+#[cfg_attr(target_arch = "wasm32", path = "wasm_directory.rs")]
+#[cfg_attr(not(target_arch = "wasm32"), path = "fs_directory.rs")]
+mod directory;
+/// Simple writable data directory abstraction that works under WASM.
+pub use directory::Directory;
+
 mod dummy;
 
 mod event;

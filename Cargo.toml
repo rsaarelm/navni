@@ -18,7 +18,6 @@ tty = ["crossterm", "signal-hook", "syslog"]
 [dependencies]
 anyhow = "1"
 crossterm = { version = "0.27", optional = true }
-env_logger = { version = "0.10", optional = true }
 image = { version = "0.24", default-features = false, features = ["png"] }
 log = "0.4"
 miniquad = { version = "0.4.0-alpha.6", optional = true }  # TODO: Switch to stable 0.4
@@ -28,6 +27,15 @@ serde = { version = "1", features = ["derive"] }
 serde_with = "3"
 signal-hook = { version = "0.3", optional = true }
 syslog = { version = "6", optional = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+dirs = "5"
+env_logger = { version = "0.10", optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+base64 = "0.21"
+getrandom = { version = "0.2", features = ["custom"] }
+quad-storage = "0.1"
 
 [dev-dependencies]
 quickcheck = "1"
