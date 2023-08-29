@@ -97,7 +97,7 @@ fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
 fn main() {
     run(
         &Config {
-            window_title: "Navni demo".to_owned(),
+            application_name: "Navni demo".to_owned(),
             system_color_palette: Some(LIGHT_PALETTE),
             ..Default::default()
         },

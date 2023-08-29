@@ -4,7 +4,7 @@ use crate::Rgba;
 #[derive(Clone, Default, Debug)]
 pub struct Config {
     /// Title of the application window.
-    pub window_title: String,
+    pub application_name: String,
 
     /// Optional custom colors for the first 16 terminal colors.
     ///

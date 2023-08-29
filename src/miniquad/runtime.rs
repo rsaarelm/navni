@@ -15,7 +15,7 @@ pub fn run<T: 'static>(
     let config = config.clone();
 
     let mq_config = conf::Conf {
-        window_title: config.window_title.clone(),
+        window_title: config.application_name.clone(),
         window_width: 1280,
         window_height: 720,
         ..Default::default()
