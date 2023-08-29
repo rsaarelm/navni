@@ -6,10 +6,18 @@ pub const FRAME_DURATION: Duration = Duration::from_micros(1_000_000 / 60);
 /// something in the update slows things down very badly.
 pub const MAX_UPDATES_PER_FRAME: u32 = 30;
 
-#[cfg_attr(feature = "gui", path = "miniquad/mod.rs")]
-#[cfg_attr(feature = "tty", path = "crossterm/mod.rs")]
-mod backend;
-pub use backend::run;
+#[cfg(feature = "gui")]
+pub mod gui;
+
+#[cfg(feature = "tty")]
+pub mod tty;
+
+#[cfg(all(not(feature = "tty"), not(feature = "gui")))]
+pub use dummy::run;
+#[cfg(feature = "gui")]
+pub use gui::run;
+#[cfg(all(feature = "tty", not(feature = "gui")))]
+pub use tty::run;
 
 mod char_cell;
 pub use char_cell::CharCell;
@@ -19,6 +27,8 @@ pub use color::{Rgba, X256Color};
 
 mod config;
 pub use config::{Config, FontSheet, CODEPAGE_437};
+
+mod dummy;
 
 mod event;
 pub use event::{Key, KeyMods, KeyTyped, MouseButton, MouseState};

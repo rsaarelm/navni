@@ -1,3 +1,4 @@
+//! Graphical desktop application backend.
 mod event;
 
 mod runtime;

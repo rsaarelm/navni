@@ -2,6 +2,7 @@
 
 use crate::prelude::*;
 
+#[allow(dead_code)]
 pub fn run<T: 'static>(
     _config: &Config,
     _game: T,

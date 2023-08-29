@@ -1,3 +1,4 @@
+//! TTY terminal backend.
 mod event;
 
 mod runtime;

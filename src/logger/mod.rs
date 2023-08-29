@@ -22,7 +22,7 @@
     path = "env_logger.rs"
 )]
 #[cfg_attr(
-    all(feature = "tty", target_os = "linux"),
+    all(feature = "tty", not(feature = "gui"), target_os = "linux"),
     path = "syslog_logger.rs"
 )]
 mod backend;
