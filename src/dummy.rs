@@ -3,10 +3,6 @@
 use crate::prelude::*;
 
 #[allow(dead_code)]
-pub fn run<T: 'static>(
-    _config: &Config,
-    _game: T,
-    _scene: impl Scene<T> + 'static,
-) -> ! {
+pub fn run(_config: &Config, _app: impl App + 'static) -> ! {
     panic!("Please compile with --features=gui or --features=tty");
 }

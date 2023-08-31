@@ -1,5 +1,6 @@
 use crate::{CharCell, Key, KeyTyped, MouseState, Rgba};
 
+/// Navni backend interfaces, access to input and buffer drawing.
 pub trait Backend {
     /// Draw a pixel buffer of a given size to backend.
     ///
@@ -40,4 +41,32 @@ pub trait Backend {
 
     /// Return mouse action state from last frame.
     fn mouse_state(&self) -> MouseState;
+
+    /// Signal that the application should close after the current update.
+    fn quit(&mut self);
+}
+
+/// Interface for the navni application code.
+pub trait App {
+    /// Called once every frame.
+    ///
+    /// If the frame rate is lagging, `n_updates` will be larger than one and
+    /// indicates you should do multiple updates on the logical state of the
+    /// application for this frame update to keep animation rate steady.
+    fn update(&mut self, b: &mut dyn Backend, n_updates: u32);
+}
+
+/// Implementation for a stateless app.
+impl<F: FnMut(&mut dyn Backend, u32)> App for F {
+    fn update(&mut self, b: &mut dyn Backend, n_updates: u32) {
+        self(b, n_updates);
+    }
+}
+
+/// Implementation of an app with an update function and persistent state
+/// data, expressed as tuple `(state, update_fn)`.
+impl<F: FnMut(&mut dyn Backend, u32, &mut T), T> App for (T, F) {
+    fn update(&mut self, b: &mut dyn Backend, n_updates: u32) {
+        (self.1)(b, n_updates, &mut self.0);
+    }
 }

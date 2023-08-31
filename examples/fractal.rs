@@ -1,6 +1,6 @@
 use navni::prelude::*;
 
-fn fractal(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
+fn fractal(b: &mut dyn Backend, _: u32) {
     let (w, h) = b.pixel_resolution();
     let (w, h) = (w.min(640), h.min(360));
 
@@ -41,12 +41,10 @@ fn fractal(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
     b.draw_pixels(w, h, &buf);
 
     if b.keypress().key() == Key::Esc {
-        return Some(StackOp::Pop);
+        b.quit();
     }
-
-    None
 }
 
 fn main() {
-    run(&Default::default(), (), fractal);
+    run(&Default::default(), fractal);
 }

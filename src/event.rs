@@ -286,6 +286,7 @@ impl From<MouseState> for [i32; 2] {
     }
 }
 
+#[allow(dead_code)]
 impl MouseState {
     /// Return current mouse cursor position.
     pub fn cursor_pos(&self) -> [i32; 2] {

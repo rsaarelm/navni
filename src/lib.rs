@@ -40,11 +40,8 @@ mod event;
 pub use event::{Key, KeyMods, KeyTyped, MouseButton, MouseState};
 
 mod interface;
-pub use interface::Backend;
+pub use interface::{App, Backend};
 
 pub mod logger;
 
 pub mod prelude;
-
-mod scene;
-pub use scene::{Scene, StackOp};

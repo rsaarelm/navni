@@ -3,13 +3,9 @@ use std::env;
 
 type GameData = image::RgbaImage;
 
-fn show(
-    game: &mut GameData,
-    b: &mut dyn Backend,
-    _: u32,
-) -> Option<StackOp<GameData>> {
+fn show(b: &mut dyn Backend, _: u32, game: &mut GameData) {
     if b.keypress().key() == Key::Esc {
-        return Some(StackOp::Pop);
+        b.quit();
     }
 
     {
@@ -18,8 +14,6 @@ fn show(
 
         b.draw_pixels(game.width(), game.height(), buf);
     }
-
-    None
 }
 
 fn main() {
@@ -31,5 +25,5 @@ fn main() {
             .expect("Failed to parse image file")
             .to_rgba8();
 
-    run(&Default::default(), image, show);
+    run(&Default::default(), (image, show));
 }

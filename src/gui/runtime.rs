@@ -1,17 +1,13 @@
 use std::collections::VecDeque;
 
 use crate::{
-    scene::SceneStack, Backend, Config, FontSheet, Key, KeyTyped, MouseState,
-    Rgba, Scene, X256Color, FRAME_DURATION, MAX_UPDATES_PER_FRAME,
+    App, Backend, Config, FontSheet, Key, KeyTyped, MouseState, Rgba,
+    X256Color, FRAME_DURATION, MAX_UPDATES_PER_FRAME,
 };
 use miniquad::*;
 use rustc_hash::FxHashSet as HashSet;
 
-pub fn run<T: 'static>(
-    config: &Config,
-    game: T,
-    scene: impl Scene<T> + 'static,
-) -> ! {
+pub fn run(config: &Config, app: impl App + 'static) -> ! {
     let config = config.clone();
 
     let mq_config = conf::Conf {
@@ -21,30 +17,26 @@ pub fn run<T: 'static>(
         ..Default::default()
     };
 
-    miniquad::start(mq_config, move || {
-        Box::new(Runtime::new(&config, game, SceneStack::new(scene)))
-    });
+    miniquad::start(mq_config, move || Box::new(Runtime::new(&config, app)));
     std::process::exit(0);
 }
 
 struct Runtime<T> {
     gui: GuiBackend,
-
-    game: T,
-    stack: SceneStack<T>,
+    app: T,
 }
 
-impl<T> Runtime<T> {
-    fn new(config: &Config, game: T, stack: SceneStack<T>) -> Self {
+impl<T: App> Runtime<T> {
+    fn new(config: &Config, app: T) -> Self {
         let gui = GuiBackend::new(config);
 
-        Runtime { gui, game, stack }
+        Runtime { gui, app }
     }
 }
 
-impl<T> EventHandler for Runtime<T> {
+impl<T: App> EventHandler for Runtime<T> {
     fn update(&mut self) {
-        if self.stack.is_empty() {
+        if self.gui.quit_requested {
             window::quit();
         }
     }
@@ -54,11 +46,7 @@ impl<T> EventHandler for Runtime<T> {
         let n = ((now - self.gui.last_update) / FRAME_DURATION.as_secs_f64())
             as u32;
 
-        self.stack.update(
-            &mut self.game,
-            &mut self.gui,
-            n.min(MAX_UPDATES_PER_FRAME),
-        );
+        self.app.update(&mut self.gui, n.min(MAX_UPDATES_PER_FRAME));
 
         self.gui.last_update += n as f64 * FRAME_DURATION.as_secs_f64();
         if n > 0 {
@@ -174,6 +162,8 @@ struct GuiBackend {
 
     mouse_offset: (i32, i32),
     mouse_scale: (i32, i32),
+
+    quit_requested: bool,
 }
 
 impl GuiBackend {
@@ -354,6 +344,7 @@ impl GuiBackend {
             keypress: Default::default(),
             mouse_offset: Default::default(),
             mouse_scale: (1, 1),
+            quit_requested: false,
         }
     }
 
@@ -545,6 +536,10 @@ impl Backend for GuiBackend {
 
     fn mouse_state(&self) -> crate::MouseState {
         self.mouse_state
+    }
+
+    fn quit(&mut self) {
+        self.quit_requested = true;
     }
 }
 

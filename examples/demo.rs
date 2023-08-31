@@ -1,6 +1,6 @@
 use navni::prelude::*;
 
-fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
+fn show(b: &mut dyn Backend, _: u32) {
     const W: usize = 80;
     const H: usize = 24;
 
@@ -80,7 +80,7 @@ fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
             }
         }
         MouseState::Release(_, _, MouseButton::Right) => {
-            return Some(StackOp::Pop);
+            b.quit();
         }
         _ => {}
     }
@@ -88,10 +88,8 @@ fn show(_: &mut (), b: &mut dyn Backend, _: u32) -> Option<StackOp<()>> {
     b.draw_chars(W as u32, H as u32, &buf);
 
     if b.keypress().key() == Key::Esc {
-        return Some(StackOp::Pop);
+        b.quit();
     }
-
-    None
 }
 
 fn main() {
@@ -101,7 +99,6 @@ fn main() {
             system_color_palette: Some(LIGHT_PALETTE),
             ..Default::default()
         },
-        (),
         show,
     );
 }

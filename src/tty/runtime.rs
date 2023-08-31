@@ -5,8 +5,8 @@ use std::{
 };
 
 use crate::{
-    scene::SceneStack, Backend, CharCell, Config, Key, KeyTyped, MouseState,
-    Rgba, Scene, X256Color, FRAME_DURATION, MAX_UPDATES_PER_FRAME,
+    App, Backend, CharCell, Config, Key, KeyTyped, MouseState, Rgba, X256Color,
+    FRAME_DURATION, MAX_UPDATES_PER_FRAME,
 };
 use crossterm::{cursor, event, queue, style, terminal, QueueableCommand};
 use signal_hook::{consts::SIGTERM, iterator::Signals};
@@ -26,20 +26,14 @@ const KEY_REPEAT_CONTINUE: Duration = Duration::from_millis(50);
 
 /// Run an application with the given starting scene and game data using a
 /// TTY backend.
-pub fn run<T>(
-    _config: &Config,
-    mut game: T,
-    scene: impl Scene<T> + 'static,
-) -> ! {
-    let mut stack = SceneStack::new(scene);
-
+pub fn run(_config: &Config, mut app: impl App + 'static) -> ! {
     let mut backend = TtyBackend::new();
 
-    while !stack.is_empty() {
+    while !backend.quit_requested {
         let dt = backend.elapsed_since_last_update();
         let n = (dt / FRAME_DURATION.as_secs_f64()) as u32;
 
-        stack.update(&mut game, &mut backend, n.min(MAX_UPDATES_PER_FRAME));
+        app.update(&mut backend, n.min(MAX_UPDATES_PER_FRAME));
         backend.keypress.pop_front();
         backend.mouse_state.frame_update();
         backend.process_events();
@@ -64,6 +58,8 @@ struct TtyBackend {
 
     // Used for fake pressed key tracking.
     last_key: (Key, f64),
+
+    quit_requested: bool,
 }
 
 struct MouseTransform {
@@ -131,6 +127,7 @@ impl TtyBackend {
             mouse_state: Default::default(),
             mouse_transform: Default::default(),
             last_key: (Key::None, 0.0),
+            quit_requested: false,
         }
     }
 
@@ -417,6 +414,10 @@ impl Backend for TtyBackend {
 
     fn mouse_state(&self) -> MouseState {
         self.mouse_state
+    }
+
+    fn quit(&mut self) {
+        self.quit_requested = true;
     }
 }
 
