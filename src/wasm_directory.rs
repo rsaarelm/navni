@@ -18,8 +18,8 @@ impl Directory {
         let mut ret = Vec::new();
         for i in 0..storage.len() {
             let Some(key) = storage.key(i) else { continue };
-            if key.starts_with(&self.0) {
-                ret.push(key);
+            if let Some(key) = key.strip_prefix(&self.0) {
+                ret.push(key.into());
             }
         }
         ret
