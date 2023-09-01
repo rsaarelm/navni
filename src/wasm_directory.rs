@@ -25,6 +25,10 @@ impl Directory {
         ret
     }
 
+    pub fn exists(&self, name: &str) -> bool {
+        self.read(name).is_ok()
+    }
+
     pub fn read(&self, name: &str) -> anyhow::Result<String> {
         let storage = &mut quad_storage::STORAGE.lock().unwrap();
 

@@ -57,6 +57,10 @@ impl Directory {
             .collect()
     }
 
+    pub fn exists(&self, name: &str) -> bool {
+        self.0.join(name).exists()
+    }
+
     pub fn read(&self, name: &str) -> anyhow::Result<String> {
         let ret = fs::read_to_string(self.0.join(name))?;
         Ok(ret)
