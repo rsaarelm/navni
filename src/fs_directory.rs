@@ -4,6 +4,20 @@ use anyhow::Context;
 
 pub struct Directory(PathBuf);
 
+impl Drop for Directory {
+    /// Delete the directory if it was left empty.
+    fn drop(&mut self) {
+        if self.0.exists() {
+            let _ = (|| -> Result<_, std::io::Error> {
+                if fs::read_dir(&self.0)?.next().is_none() {
+                    fs::remove_dir(&self.0)?;
+                }
+                Ok(())
+            })();
+        }
+    }
+}
+
 impl Directory {
     pub fn config(application_name: &str) -> anyhow::Result<Self> {
         let xdg_data_dir = dirs::config_dir()
