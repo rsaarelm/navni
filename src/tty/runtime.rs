@@ -60,6 +60,7 @@ struct TtyBackend {
     last_key: (Key, f64),
 
     quit_requested: bool,
+    focus_lost: bool,
 }
 
 struct MouseTransform {
@@ -128,6 +129,7 @@ impl TtyBackend {
             mouse_transform: Default::default(),
             last_key: (Key::None, 0.0),
             quit_requested: false,
+            focus_lost: false,
         }
     }
 
@@ -137,6 +139,7 @@ impl TtyBackend {
     }
 
     fn process_event(&mut self, event: event::Event) {
+        self.wake_up();
         match event {
             event::Event::Key(k) => {
                 if let Ok(k) = KeyTyped::try_from(k) {
@@ -195,10 +198,11 @@ impl TtyBackend {
                 self.resize(w as _, h as _);
             }
             event::Event::FocusGained => {
-                // TODO: Focus setting.
+                // No-op, entering the event handler wakes you up.
             }
             event::Event::FocusLost => {
-                // TODO: Focus setting.
+                // Go to sleep.
+                self.focus_lost = true;
             }
             event::Event::Paste(_) => {}
         }
@@ -208,7 +212,12 @@ impl TtyBackend {
         // TODO Better error handling when processing crossterm events
 
         // Process immediately available events.
-        while event::poll(Duration::from_secs(0)).unwrap_or(false) {
+        // If focus is currently lost, don't poll for events but just enter
+        // the blocking event read until an event comes in and wakes the
+        // program.
+        while self.focus_lost
+            || event::poll(Duration::from_secs(0)).unwrap_or(false)
+        {
             self.process_event(event::read().unwrap());
         }
 
@@ -235,6 +244,13 @@ impl TtyBackend {
         let [ox, oy] = self.mouse_transform.offset;
         let [sx, sy] = self.mouse_transform.scale;
         [(x - ox) * sx, (y - oy) * sy]
+    }
+
+    fn wake_up(&mut self) {
+        if self.focus_lost {
+            self.focus_lost = false;
+            self.last_update = now();
+        }
     }
 }
 
