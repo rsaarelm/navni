@@ -269,8 +269,9 @@ pub enum MouseState {
     Drag([i32; 2], [i32; 2], MouseButton),
     /// `Release(p, s, b)` Button `b` released over `p` after drag from `s`.
     Release([i32; 2], [i32; 2], MouseButton),
-    /// Scroll wheel scrolled at position.
-    Scroll([i32; 2], i32),
+    /// `Scroll(p, [u, v])` Mouse at position p scrolled `u` horizontal, `v`
+    /// vertical.
+    Scroll([i32; 2], [i32; 2]),
 }
 use MouseState::*;
 
@@ -318,11 +319,11 @@ impl MouseState {
         }
     }
 
-    pub fn scroll_delta(&self) -> i32 {
+    pub fn scroll_delta(&self) -> [i32; 2] {
         if let Scroll(_, z) = self {
             *z
         } else {
-            0
+            [0, 0]
         }
     }
 
@@ -347,10 +348,10 @@ impl MouseState {
         }
     }
 
-    pub(crate) fn scroll(&mut self, z: i32) {
-        debug_assert!(z == -1 || z == 1);
+    pub(crate) fn scroll(&mut self, u: i32, v: i32) {
+        debug_assert!(u.abs() == 1 || v.abs() == 1);
         let p = self.cursor_pos();
-        *self = Scroll(p, z);
+        *self = Scroll(p, [u, v]);
     }
 
     /// Update called every frame, exits transient `Release` and `Scroll`

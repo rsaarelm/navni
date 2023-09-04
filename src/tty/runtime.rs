@@ -184,13 +184,17 @@ impl TtyBackend {
                             self.transform_mouse_pos([x, y]);
                     }
                     event::MouseEventKind::ScrollDown => {
-                        self.mouse_state.scroll(1);
+                        self.mouse_state.scroll(0, 1);
                     }
                     event::MouseEventKind::ScrollUp => {
-                        self.mouse_state.scroll(-1);
+                        self.mouse_state.scroll(0, -1);
                     }
-                    event::MouseEventKind::ScrollLeft => {}
-                    event::MouseEventKind::ScrollRight => {}
+                    event::MouseEventKind::ScrollLeft => {
+                        self.mouse_state.scroll(-1, 0);
+                    }
+                    event::MouseEventKind::ScrollRight => {
+                        self.mouse_state.scroll(1, 0);
+                    }
                 }
             }
             event::Event::Resize(w, h) => {

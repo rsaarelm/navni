@@ -112,9 +112,11 @@ impl<T: App> EventHandler for Runtime<T> {
             self.gui.transform_mouse_pos(x, y);
     }
 
-    fn mouse_wheel_event(&mut self, _x: f32, y: f32) {
-        let z = -y as i32;
-        self.gui.mouse_state.scroll(if z < 0 { -1 } else { 1 });
+    fn mouse_wheel_event(&mut self, x: f32, y: f32) {
+        let (u, v) = ((-x as i32).signum(), (-y as i32).signum());
+        if u != 0 || v != 0 {
+            self.gui.mouse_state.scroll(u, v);
+        }
     }
 
     fn mouse_button_down_event(
