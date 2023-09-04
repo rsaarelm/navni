@@ -256,10 +256,12 @@ impl GuiBackend {
 
         let pixels_shader = gl
             .new_shader(
-                ShaderSource {
-                    glsl_vertex: Some(VERTEX_SHADER),
-                    glsl_fragment: Some(PIXEL_FRAGMENT_SHADER),
-                    metal_shader: None,
+                match gl.info().backend {
+                    miniquad::Backend::OpenGl => ShaderSource::Glsl {
+                        vertex: VERTEX_SHADER,
+                        fragment: PIXEL_FRAGMENT_SHADER,
+                    },
+                    miniquad::Backend::Metal => unimplemented!(),
                 },
                 ShaderMeta {
                     images: vec!["pixels".to_string()],
@@ -281,10 +283,12 @@ impl GuiBackend {
 
         let chars_shader = gl
             .new_shader(
-                ShaderSource {
-                    glsl_vertex: Some(VERTEX_SHADER),
-                    glsl_fragment: Some(CHAR_FRAGMENT_SHADER),
-                    metal_shader: None,
+                match gl.info().backend {
+                    miniquad::Backend::OpenGl => ShaderSource::Glsl {
+                        vertex: VERTEX_SHADER,
+                        fragment: CHAR_FRAGMENT_SHADER,
+                    },
+                    miniquad::Backend::Metal => unimplemented!(),
                 },
                 ShaderMeta {
                     images: vec![
@@ -553,7 +557,8 @@ fn create_texture<T>(
         bytes(data),
         TextureParams {
             format: TextureFormat::RGBA8,
-            filter: FilterMode::Nearest,
+            min_filter: FilterMode::Nearest,
+            mag_filter: FilterMode::Nearest,
             width: w as _,
             height: h as _,
             ..Default::default()
