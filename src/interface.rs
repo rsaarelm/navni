@@ -20,6 +20,7 @@ pub trait Backend {
     /// Return char cell resolution of backend, depends on font size.
     fn char_resolution(&self) -> (u32, u32);
 
+    /// Return whether backend is a desktop GUI and not a terminal TTY.
     fn is_gui(&self) -> bool {
         false
     }

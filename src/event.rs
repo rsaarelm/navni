@@ -253,7 +253,7 @@ impl FromStr for Key {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum MouseButton {
     Left,
     Middle,
@@ -261,7 +261,7 @@ pub enum MouseButton {
 }
 
 /// Complex mouse state for IMGUI
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Hash, Debug)]
 pub enum MouseState {
     /// Mouse hovering over position with buttons unpressed.
     Hover([i32; 2]),
