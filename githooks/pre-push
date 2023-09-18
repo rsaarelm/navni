@@ -2,8 +2,13 @@
 set -e
 cargo fmt --check
 
-# Make sure both backends compile and WASM build works.
+# Check various build configurations
+
+# Misconfigured dummy build, must still build for user friendliness
+cargo check
+# Desktop TTY build
 cargo check --features=tty
+# Desktop GUI build
 cargo check --features=gui
 
 # Main program unit tests

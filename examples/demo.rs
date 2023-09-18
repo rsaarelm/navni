@@ -1,106 +1,106 @@
 use navni::prelude::*;
 
-fn show(b: &mut dyn Backend, _: u32) {
+async fn amain() {
     const W: usize = 80;
     const H: usize = 24;
 
     let mut buf: Vec<CharCell> = vec![Default::default(); W * H];
+    navni::set_palette(&LIGHT_PALETTE);
 
-    // Demonstrate the key down check function.
-    if b.is_down(Key::Char('w')) || b.is_down(Key::Up) {
-        buf[1 + 0 * W] =
-            CharCell::new('^', X256Color::LIME, X256Color::BACKGROUND);
-    }
-    if b.is_down(Key::Char('a')) || b.is_down(Key::Left) {
-        buf[0 + 1 * W] =
-            CharCell::new('<', X256Color::LIME, X256Color::BACKGROUND);
-    }
-    if b.is_down(Key::Char('s')) || b.is_down(Key::Down) {
-        buf[1 + 1 * W] =
-            CharCell::new('v', X256Color::LIME, X256Color::BACKGROUND);
-    }
-    if b.is_down(Key::Char('d')) || b.is_down(Key::Right) {
-        buf[2 + 1 * W] =
-            CharCell::new('>', X256Color::LIME, X256Color::BACKGROUND);
-    }
+    loop {
+        buf.clear();
+        buf.resize(W * H, Default::default());
 
-    // Draw colorful stuff.
-    for y in 0..16 {
-        for x in 0..16 {
-            let c = CharCell::new('@', X256Color(x as u8), X256Color(y as u8));
-            buf[x + 2 + (y + 2) * W] = c;
+        // Demonstrate the key down check function.
+        if navni::is_down(Key::Char('w')) || navni::is_down(Key::Up) {
+            buf[1 + 0 * W] =
+                CharCell::new('^', X256Color::LIME, X256Color::BACKGROUND);
         }
-    }
-
-    for y in 0..16 {
-        for x in 0..16 {
-            let c = CharCell::new(
-                navni::CODEPAGE_437[x + y * 16],
-                X256Color((x + 16 * y) as u8),
-                X256Color::BACKGROUND,
-            );
-            buf[x + 20 + (y + 2) * W] = c;
+        if navni::is_down(Key::Char('a')) || navni::is_down(Key::Left) {
+            buf[0 + 1 * W] =
+                CharCell::new('<', X256Color::LIME, X256Color::BACKGROUND);
         }
-    }
-
-    for y in 0..16 {
-        for x in 0..16 {
-            let c = CharCell::new(
-                '@',
-                X256Color::FOREGROUND,
-                X256Color((x + 16 * y) as u8),
-            );
-            buf[x + 38 + (y + 2) * W] = c;
+        if navni::is_down(Key::Char('s')) || navni::is_down(Key::Down) {
+            buf[1 + 1 * W] =
+                CharCell::new('v', X256Color::LIME, X256Color::BACKGROUND);
         }
-    }
-
-    for y in 0..16 {
-        for x in 0..16 {
-            let c = CharCell::new(
-                '@',
-                X256Color::BACKGROUND,
-                X256Color((x + 16 * y) as u8),
-            );
-            buf[x + 56 + (y + 2) * W] = c;
+        if navni::is_down(Key::Char('d')) || navni::is_down(Key::Right) {
+            buf[2 + 1 * W] =
+                CharCell::new('>', X256Color::LIME, X256Color::BACKGROUND);
         }
-    }
 
-    match b.mouse_state() {
-        MouseState::Drag(pos, _, MouseButton::Left) => {
-            if pos[0] >= 0
-                && pos[1] >= 0
-                && pos[0] < W as i32
-                && pos[1] < H as i32
-            {
-                buf[pos[0] as usize + W * pos[1] as usize] = CharCell::new(
-                    ' ',
-                    X256Color::FOREGROUND,
-                    X256Color::FUCHSIA,
-                );
+        // Draw colorful stuff.
+        for y in 0..16 {
+            for x in 0..16 {
+                let c =
+                    CharCell::new('@', X256Color(x as u8), X256Color(y as u8));
+                buf[x + 2 + (y + 2) * W] = c;
             }
         }
-        MouseState::Release(_, _, MouseButton::Right) => {
-            b.quit();
+
+        for y in 0..16 {
+            for x in 0..16 {
+                let c = CharCell::new(
+                    navni::CODEPAGE_437[x + y * 16],
+                    X256Color((x + 16 * y) as u8),
+                    X256Color::BACKGROUND,
+                );
+                buf[x + 20 + (y + 2) * W] = c;
+            }
         }
-        _ => {}
-    }
 
-    b.draw_chars(W as u32, H as u32, &buf);
+        for y in 0..16 {
+            for x in 0..16 {
+                let c = CharCell::new(
+                    '@',
+                    X256Color::FOREGROUND,
+                    X256Color((x + 16 * y) as u8),
+                );
+                buf[x + 38 + (y + 2) * W] = c;
+            }
+        }
 
-    if b.keypress().key() == Key::Esc {
-        b.quit();
+        for y in 0..16 {
+            for x in 0..16 {
+                let c = CharCell::new(
+                    '@',
+                    X256Color::BACKGROUND,
+                    X256Color((x + 16 * y) as u8),
+                );
+                buf[x + 56 + (y + 2) * W] = c;
+            }
+        }
+
+        match navni::mouse_state() {
+            MouseState::Drag(pos, _, MouseButton::Left) => {
+                if pos[0] >= 0
+                    && pos[1] >= 0
+                    && pos[0] < W as i32
+                    && pos[1] < H as i32
+                {
+                    buf[pos[0] as usize + W * pos[1] as usize] = CharCell::new(
+                        ' ',
+                        X256Color::FOREGROUND,
+                        X256Color::FUCHSIA,
+                    );
+                }
+            }
+            MouseState::Release(_, _, MouseButton::Right) => {
+                break;
+            }
+            _ => {}
+        }
+
+        navni::draw_chars(W as u32, H as u32, &buf).await;
+
+        if navni::keypress().key() == Key::Esc {
+            break;
+        }
     }
 }
 
 fn main() {
-    run(
-        &Config {
-            application_name: "Navni demo".to_owned(),
-            system_color_palette: Some(LIGHT_PALETTE),
-            ..Default::default()
-        },
-        show,
-    );
+    navni::run("Navni demo", amain());
 }
 
 const LIGHT_PALETTE: [Rgba; 16] = [

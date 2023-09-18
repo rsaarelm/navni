@@ -16,6 +16,9 @@ or
 
 ## Features
 
+- Async execution model for the game loop allows writing complex user
+  interface control flow without having to make everything into an explicit
+  state machine.
 - Simple mouse and keyboard event handling.
 - Logging backend activator, use syslog logging with TTY builds where you
   can't output extra lines to stdout and a stdout-based logger with Linux GUI

@@ -20,7 +20,7 @@ anyhow = "1"
 crossterm = { version = "0.27", optional = true }
 image = { version = "0.24", default-features = false, features = ["png"] }
 log = "0.4"
-miniquad = { version = "0.4.0-alpha.6", optional = true }  # TODO: Switch to stable 0.4
+miniquad = { version = "0.4.0-alpha.10", optional = true }  # TODO: Switch to stable 0.4
 rustc-hash = "1"
 seq-macro = "0.3"
 serde = { version = "1", features = ["derive"] }

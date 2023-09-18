@@ -1,21 +1,3 @@
-use crate::Rgba;
-
-/// Navni application configuration.
-#[derive(Clone, Default, Debug)]
-pub struct Config {
-    /// Title of the application window.
-    pub application_name: String,
-
-    /// Optional custom colors for the first 16 terminal colors.
-    ///
-    /// Terminal colors use the 256 color Xterm palette. Colors 16 to 255 can
-    /// not be customized.
-    pub system_color_palette: Option<[Rgba; 16]>,
-
-    /// Custom bitmap font sheet.
-    pub font_sheet: Option<FontSheet>,
-}
-
 #[derive(Clone, Debug)]
 pub struct FontSheet {
     /// 16x16 grid of 256 glyphs.

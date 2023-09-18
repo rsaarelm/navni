@@ -1,57 +1,78 @@
-use std::collections::VecDeque;
-
-use crate::{
-    App, Backend, Config, FontSheet, Key, KeyTyped, MouseState, Rgba,
-    X256Color, FRAME_DURATION, MAX_UPDATES_PER_FRAME,
+use std::{
+    collections::VecDeque,
+    future::Future,
+    pin::Pin,
+    sync::{Mutex, OnceLock},
 };
+
 use miniquad::*;
 use rustc_hash::FxHashSet as HashSet;
 
-pub fn run(config: &Config, app: impl App + 'static) -> ! {
-    let config = config.clone();
+use crate::{
+    FontSheet, Key, KeyTyped, MouseState, Rgba, X256Color, FRAME_DURATION,
+};
 
-    let mq_config = conf::Conf {
-        window_title: config.application_name.clone(),
-        window_width: 1280,
-        window_height: 720,
-        ..Default::default()
-    };
+pub static RUNTIME: OnceLock<Mutex<Runtime>> = OnceLock::new();
 
-    miniquad::start(mq_config, move || Box::new(Runtime::new(&config, app)));
-    std::process::exit(0);
+pub static mut FUTURE: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
+
+const BINDINGS_PIXEL_BUFFER_INDEX: usize = 0;
+const BINDINGS_FONT_SHEET_INDEX: usize = 1;
+const BINDINGS_TEXT_BUFFER_INDEX: usize = 2;
+const BINDINGS_FOREGROUND_COLOR_INDEX: usize = 3;
+const BINDINGS_BACKGROUND_COLOR_INDEX: usize = 4;
+
+pub fn with<F, T>(mut f: F) -> T
+where
+    F: FnMut(&mut Runtime) -> T,
+{
+    let mut gui = RUNTIME
+        .get()
+        .expect("backend not initialized")
+        .lock()
+        .unwrap();
+    f(&mut gui)
 }
 
-struct Runtime<T> {
-    gui: GuiBackend,
-    app: T,
-}
+/// Dummy type to pass to miniquad, just accesses the Runtime singleton.
+pub struct Handle;
 
-impl<T: App> Runtime<T> {
-    fn new(config: &Config, app: T) -> Self {
-        let gui = GuiBackend::new(config);
-
-        Runtime { gui, app }
-    }
-}
-
-impl<T: App> EventHandler for Runtime<T> {
+impl EventHandler for Handle {
     fn update(&mut self) {
-        if self.gui.quit_requested {
-            window::quit();
-        }
+        // TODO: Should the future be updated here instead of in draw?
     }
 
     fn draw(&mut self) {
-        let now = date::now();
-        let n = ((now - self.gui.last_update) / FRAME_DURATION.as_secs_f64())
-            as u32;
+        let n_frames = with(|r| {
+            let now = date::now();
+            let elapsed = now - r.last_update;
 
-        self.app.update(&mut self.gui, n.min(MAX_UPDATES_PER_FRAME));
+            (elapsed / FRAME_DURATION.as_secs_f64()) as u32
+        });
 
-        self.gui.last_update += n as f64 * FRAME_DURATION.as_secs_f64();
-        if n > 0 {
-            self.gui.keypress.pop_front();
-            self.gui.mouse_state.frame_update();
+        // One or more frames have elapsed, tick the state machine.
+        if n_frames > 0 {
+            with(|r| {
+                r.logical_frame_count = n_frames;
+                r.last_update += n_frames as f64 * FRAME_DURATION.as_secs_f64();
+            });
+
+            // Poll on the application future, this moves application logic
+            // forward to the point where it awaits for frame change.
+            //
+            // If the future completes, the application run has ended and
+            // we should quit.
+            if unsafe { crate::exec::poll(FUTURE.as_mut().unwrap()) }.is_some()
+            {
+                window::quit();
+                return;
+            }
+
+            // Update input stack machines.
+            with(|r| {
+                r.keypress.pop_front();
+                r.mouse_state.frame_update();
+            });
         }
     }
 
@@ -61,20 +82,22 @@ impl<T: App> EventHandler for Runtime<T> {
         keymods: KeyMods,
         _repeat: bool,
     ) {
-        if let Ok(typed) = KeyTyped::try_from((keycode, keymods)) {
-            // Miniquad won't give char_event for non-printable keys, but we
-            // want those too. Emit them here.
-            if !matches!(typed.key(), Key::Char(_)) {
-                self.gui.keypress.push_back(typed);
-            }
+        with(|r| {
+            if let Ok(typed) = KeyTyped::try_from((keycode, keymods)) {
+                // Miniquad won't give char_event for non-printable keys, but we
+                // want those too. Emit them here.
+                if !matches!(typed.key(), Key::Char(_)) {
+                    r.keypress.push_back(typed);
+                }
 
-            self.gui.key_down.insert(typed.key().char_to_lowercase());
-        }
+                r.key_down.insert(typed.key().char_to_lowercase());
+            }
+        })
     }
 
     fn key_up_event(&mut self, keycode: KeyCode, keymods: KeyMods) {
         if let Ok(typed) = KeyTyped::try_from((keycode, keymods)) {
-            self.gui.key_down.remove(&typed.key().char_to_lowercase());
+            with(|r| r.key_down.remove(&typed.key().char_to_lowercase()));
         }
     }
 
@@ -104,18 +127,17 @@ impl<T: App> EventHandler for Runtime<T> {
         // Shift must be false with printable keys.
         mods.shift = false;
         let typed = KeyTyped::new(Key::Char(character), mods);
-        self.gui.keypress.push_back(typed);
+        with(|r| r.keypress.push_back(typed));
     }
 
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
-        *self.gui.mouse_state.cursor_pos_mut() =
-            self.gui.transform_mouse_pos(x, y);
+        with(|r| *r.mouse_state.cursor_pos_mut() = r.transform_mouse_pos(x, y));
     }
 
     fn mouse_wheel_event(&mut self, x: f32, y: f32) {
         let (u, v) = ((-x as i32).signum(), (-y as i32).signum());
         if u != 0 || v != 0 {
-            self.gui.mouse_state.scroll(u, v);
+            with(|r| r.mouse_state.scroll(u, v));
         }
     }
 
@@ -126,7 +148,7 @@ impl<T: App> EventHandler for Runtime<T> {
         _y: f32,
     ) {
         if let Ok(button) = button.try_into() {
-            self.gui.mouse_state.button_down(button);
+            with(|r| r.mouse_state.button_down(button));
         }
     }
 
@@ -137,39 +159,45 @@ impl<T: App> EventHandler for Runtime<T> {
         _y: f32,
     ) {
         if let Ok(button) = button.try_into() {
-            self.gui.mouse_state.button_up(button);
+            with(|r| r.mouse_state.button_up(button));
         }
     }
 }
 
-struct GuiBackend {
+struct Font {
+    // Lookup table from codepoints to font sheet.
+    //
+    // All undefined codepoints will point to 0xff.
+    char_lookup: Vec<u8>,
+    font_size: (u32, u32),
+}
+
+pub struct Runtime {
     gl: GlContext,
 
     pixels_pipeline: Pipeline,
     chars_pipeline: Pipeline,
     bindings: Bindings,
 
-    // Lookup table from codepoints to font sheet.
-    //
-    // All undefined codepoints will point to 0xff.
-    char_lookup: Vec<u8>,
-    font_size: (u32, u32),
-    system_colors: Option<[Rgba; 16]>,
+    system_colors: [Rgba; 16],
+    font: Option<Font>,
 
-    last_update: f64,
+    pub(crate) last_update: f64,
+    /// How many logical frames were covered in last frame.
+    ///
+    /// This goes up if the app is slow and drops frames.
+    pub(crate) logical_frame_count: u32,
 
-    key_down: HashSet<Key>,
-    mouse_state: MouseState,
-    keypress: VecDeque<KeyTyped>,
+    pub(crate) key_down: HashSet<Key>,
+    pub(crate) mouse_state: MouseState,
+    pub(crate) keypress: VecDeque<KeyTyped>,
 
     mouse_offset: (i32, i32),
     mouse_scale: (i32, i32),
-
-    quit_requested: bool,
 }
 
-impl GuiBackend {
-    fn new(config: &Config) -> Self {
+impl Runtime {
+    pub fn new() -> Self {
         let mut gl = GlContext::new();
 
         #[rustfmt::skip]
@@ -193,46 +221,8 @@ impl GuiBackend {
             BufferSource::slice(&indices),
         );
 
-        let font_size;
-
-        let (font_image, font_chars) = match &config.font_sheet {
-            Some(sheet) => {
-                assert!(sheet.image.width() % 16 == 0 && sheet.image.height() % 16 == 0,
-                    "Font sheet dimensions aren't a multiple of 16, sheet must be a 16x16 grid");
-                font_size =
-                    (sheet.image.width() / 16, sheet.image.height() / 16);
-                (
-                    create_texture(
-                        &mut gl,
-                        sheet.image.width(),
-                        sheet.image.height(),
-                        sheet.image.as_raw(),
-                    ),
-                    sheet.chars,
-                )
-            }
-            None => {
-                let sheet = FontSheet::default();
-                assert!(sheet.image.width() % 16 == 0 && sheet.image.height() % 16 == 0,
-                    "Font sheet dimensions aren't a multiple of 16, sheet must be a 16x16 grid");
-                font_size =
-                    (sheet.image.width() / 16, sheet.image.height() / 16);
-                (
-                    create_texture(
-                        &mut gl,
-                        sheet.image.width(),
-                        sheet.image.height(),
-                        sheet.image.as_raw(),
-                    ),
-                    sheet.chars,
-                )
-            }
-        };
-
-        let mut char_lookup = vec![0xff; 0x10000];
-        for (i, &c) in font_chars.iter().enumerate() {
-            char_lookup[c as usize] = i as u8;
-        }
+        // Placeholder until the font gets initialized.
+        let font_image = create_texture::<u8>(&mut gl, 0, 0, &[]);
 
         // Pixel buffer pixels.
         let pixels = create_texture::<u8>(&mut gl, 0, 0, &[]);
@@ -247,6 +237,7 @@ impl GuiBackend {
         let bindings = Bindings {
             vertex_buffers: vec![vertex_buffer],
             index_buffer,
+            // This layout must match the BINDINGS_*_INDEX constants
             images: vec![
                 pixels,
                 font_image,
@@ -336,22 +327,176 @@ impl GuiBackend {
 
         let last_update = date::now();
 
-        GuiBackend {
+        Runtime {
             gl,
             pixels_pipeline,
             chars_pipeline,
             bindings,
-            char_lookup,
-            font_size,
-            system_colors: config.system_color_palette,
+            font: None,
+            system_colors: std::array::from_fn(|i| X256Color(i as u8).into()),
             last_update,
+            logical_frame_count: 1,
             key_down: Default::default(),
             mouse_state: Default::default(),
             keypress: Default::default(),
             mouse_offset: Default::default(),
             mouse_scale: (1, 1),
-            quit_requested: false,
         }
+    }
+
+    fn get_font(&mut self) -> &Font {
+        if self.font.is_none() {
+            self.set_font(&FontSheet::default());
+        }
+        self.font.as_ref().unwrap()
+    }
+
+    pub fn set_font(&mut self, sheet: &FontSheet) {
+        let font_size;
+
+        let (font_image, font_chars) = {
+            assert!(sheet.image.width() % 16 == 0 && sheet.image.height() % 16 == 0,
+                    "Font sheet dimensions aren't a multiple of 16, sheet must be a 16x16 grid");
+            font_size = (sheet.image.width() / 16, sheet.image.height() / 16);
+            (
+                create_texture(
+                    &mut self.gl,
+                    sheet.image.width(),
+                    sheet.image.height(),
+                    sheet.image.as_raw(),
+                ),
+                sheet.chars,
+            )
+        };
+
+        let mut char_lookup = vec![0xff; 0x10000];
+        for (i, &c) in font_chars.iter().enumerate() {
+            char_lookup[c as usize] = i as u8;
+        }
+
+        self.bindings.images[BINDINGS_FONT_SHEET_INDEX] = font_image;
+        self.font = Some(Font {
+            char_lookup,
+            font_size,
+        });
+    }
+
+    pub fn set_palette(&mut self, palette: &[Rgba; 16]) {
+        self.system_colors = *palette;
+    }
+
+    pub fn draw_pixels(&mut self, w: u32, h: u32, buffer: &[crate::Rgba]) {
+        assert!(buffer.len() == (w * h) as usize);
+
+        self.gl.texture_resize(
+            self.bindings.images[BINDINGS_PIXEL_BUFFER_INDEX],
+            w,
+            h,
+            Some(bytes(buffer)),
+        );
+
+        self.gl.begin_default_pass(Default::default());
+        self.gl.apply_pipeline(&self.pixels_pipeline);
+        self.gl.apply_bindings(&self.bindings);
+
+        let canvas_scale = self.pixel_canvas_scale(w, h);
+
+        self.gl.apply_uniforms(UniformsSource::table(&Uniforms {
+            terminal_size: (0.0, 0.0),
+            canvas_scale,
+        }));
+
+        self.clear();
+        self.gl.draw(0, 6, 1);
+        self.gl.end_render_pass();
+        self.gl.commit_frame();
+    }
+
+    pub fn draw_chars(&mut self, w: u32, h: u32, buffer: &[crate::CharCell]) {
+        assert!(buffer.len() == (w * h) as usize);
+
+        // Make sure font is initialized.
+        self.get_font();
+
+        // TODO: Make the channel-buffers reused members of Runtime so I
+        // don't need to heap-allocate new ones every frame.
+        //
+        // If I want to really optimize this, maybe the X256 palette could be
+        // embedded in the shader and the shader could operate directly on
+        // CharCell data...
+
+        let chars: Vec<u32> = {
+            let lookup = &self.get_font().char_lookup;
+            buffer.iter().map(|a| lookup[a.c as usize] as u32).collect()
+        };
+        let fore: Vec<Rgba> = buffer
+            .iter()
+            .map(|a| self.convert_color(a.foreground))
+            .collect();
+        let back: Vec<Rgba> = buffer
+            .iter()
+            .map(|a| self.convert_color(a.background))
+            .collect();
+
+        self.gl.texture_resize(
+            self.bindings.images[BINDINGS_TEXT_BUFFER_INDEX],
+            w,
+            h,
+            Some(bytes(&chars)),
+        );
+        self.gl.texture_resize(
+            self.bindings.images[BINDINGS_FOREGROUND_COLOR_INDEX],
+            w,
+            h,
+            Some(bytes(&fore)),
+        );
+        self.gl.texture_resize(
+            self.bindings.images[BINDINGS_BACKGROUND_COLOR_INDEX],
+            w,
+            h,
+            Some(bytes(&back)),
+        );
+
+        self.gl.begin_default_pass(Default::default());
+        self.gl.apply_pipeline(&self.chars_pipeline);
+        self.gl.apply_bindings(&self.bindings);
+
+        let canvas_scale = self.char_canvas_scale(w, h);
+
+        self.gl.apply_uniforms(UniformsSource::table(&Uniforms {
+            terminal_size: (w as f32, h as f32),
+            canvas_scale,
+        }));
+
+        self.clear();
+        self.gl.draw(0, 6, 1);
+        self.gl.end_render_pass();
+        self.gl.commit_frame();
+    }
+
+    pub fn pixel_resolution(&self) -> (u32, u32) {
+        let (w, h) = window::screen_size();
+        (w as u32, h as u32)
+    }
+
+    pub fn char_resolution(&mut self, max_w: u32, max_h: u32) -> (u32, u32) {
+        let (w, h) = self.pixel_resolution();
+        let size = self.get_font().font_size;
+
+        let mut n = 1; // Scale factor.
+        if max_w > 0 {
+            while (w / n) / size.0 > max_w {
+                n += 1;
+            }
+        }
+
+        if max_h > 0 {
+            while (h / n) / size.1 > max_h {
+                n += 1;
+            }
+        }
+
+        ((w / n) / size.0, (h / n) / size.1)
     }
 
     fn pixel_canvas_scale(
@@ -382,17 +527,14 @@ impl GuiBackend {
     }
 
     fn clear(&mut self) {
-        let clear_color = if let Some(pal) = self.system_colors {
-            (
-                pal[0].r as f32 / 255.0,
-                pal[0].g as f32 / 255.0,
-                pal[0].b as f32 / 255.0,
-                pal[0].a as f32 / 255.0,
-            )
-        } else {
-            (0.0, 0.0, 0.0, 0.0)
-        };
-        self.gl.clear(Some(clear_color), None, None);
+        let c = self.system_colors[0];
+        let c = (
+            c.r as f32 / 255.0,
+            c.g as f32 / 255.0,
+            c.b as f32 / 255.0,
+            c.a as f32 / 255.0,
+        );
+        self.gl.clear(Some(c), None, None);
     }
 
     fn char_canvas_scale(
@@ -400,12 +542,12 @@ impl GuiBackend {
         buffer_w: u32,
         buffer_h: u32,
     ) -> (f32, f32) {
-        let (buffer_w, buffer_h) =
-            (buffer_w * self.font_size.0, buffer_h * self.font_size.1);
+        let size = self.get_font().font_size;
+        let (buffer_w, buffer_h) = (buffer_w * size.0, buffer_h * size.1);
 
         let ret = self.pixel_canvas_scale(buffer_w, buffer_h);
-        self.mouse_scale.0 *= self.font_size.0 as i32;
-        self.mouse_scale.1 *= self.font_size.1 as i32;
+        self.mouse_scale.0 *= size.0 as i32;
+        self.mouse_scale.1 *= size.1 as i32;
         ret
     }
 
@@ -418,134 +560,10 @@ impl GuiBackend {
 
     fn convert_color(&self, c: X256Color) -> Rgba {
         if c.0 < 16 {
-            if let Some(pal) = self.system_colors {
-                return pal[c.0 as usize];
-            }
+            self.system_colors[c.0 as usize]
+        } else {
+            c.into()
         }
-
-        c.into()
-    }
-}
-
-impl Backend for GuiBackend {
-    fn draw_pixels(&mut self, w: u32, h: u32, buffer: &[crate::Rgba]) {
-        assert!(buffer.len() == (w * h) as usize);
-
-        self.gl.texture_resize(
-            self.bindings.images[0],
-            w,
-            h,
-            Some(bytes(buffer)),
-        );
-
-        self.gl.begin_default_pass(Default::default());
-        self.gl.apply_pipeline(&self.pixels_pipeline);
-        self.gl.apply_bindings(&self.bindings);
-
-        let canvas_scale = self.pixel_canvas_scale(w, h);
-
-        self.gl.apply_uniforms(UniformsSource::table(&Uniforms {
-            terminal_size: (0.0, 0.0),
-            canvas_scale,
-        }));
-
-        self.clear();
-        self.gl.draw(0, 6, 1);
-        self.gl.end_render_pass();
-        self.gl.commit_frame();
-    }
-
-    fn draw_chars(&mut self, w: u32, h: u32, buffer: &[crate::CharCell]) {
-        assert!(buffer.len() == (w * h) as usize);
-
-        // TODO: Make the channel-buffers reused members of GuiBackend so I
-        // don't need to heap-allocate new ones every frame.
-        //
-        // If I want to really optimize this, maybe the X256 palette could be
-        // embedded in the shader and the shader could operate directly on
-        // CharCell data...
-
-        let chars: Vec<u32> = buffer
-            .iter()
-            .map(|a| self.char_lookup[a.c as usize] as u32)
-            .collect();
-        let fore: Vec<Rgba> = buffer
-            .iter()
-            .map(|a| self.convert_color(a.foreground))
-            .collect();
-        let back: Vec<Rgba> = buffer
-            .iter()
-            .map(|a| self.convert_color(a.background))
-            .collect();
-
-        self.gl.texture_resize(
-            self.bindings.images[2],
-            w,
-            h,
-            Some(bytes(&chars)),
-        );
-        self.gl.texture_resize(
-            self.bindings.images[3],
-            w,
-            h,
-            Some(bytes(&fore)),
-        );
-        self.gl.texture_resize(
-            self.bindings.images[4],
-            w,
-            h,
-            Some(bytes(&back)),
-        );
-
-        self.gl.begin_default_pass(Default::default());
-        self.gl.apply_pipeline(&self.chars_pipeline);
-        self.gl.apply_bindings(&self.bindings);
-
-        let canvas_scale = self.char_canvas_scale(w, h);
-
-        self.gl.apply_uniforms(UniformsSource::table(&Uniforms {
-            terminal_size: (w as f32, h as f32),
-            canvas_scale,
-        }));
-
-        self.clear();
-        self.gl.draw(0, 6, 1);
-        self.gl.end_render_pass();
-        self.gl.commit_frame();
-    }
-
-    fn pixel_resolution(&self) -> (u32, u32) {
-        let (w, h) = window::screen_size();
-        (w as u32, h as u32)
-    }
-
-    fn char_resolution(&self) -> (u32, u32) {
-        let (w, h) = self.pixel_resolution();
-        (w / self.font_size.0, h / self.font_size.1)
-    }
-
-    fn is_gui(&self) -> bool {
-        true
-    }
-
-    fn now(&self) -> f64 {
-        self.last_update
-    }
-
-    fn is_down(&self, key: crate::Key) -> bool {
-        self.key_down.contains(&key)
-    }
-
-    fn keypress(&self) -> crate::KeyTyped {
-        self.keypress.front().copied().unwrap_or_default()
-    }
-
-    fn mouse_state(&self) -> crate::MouseState {
-        self.mouse_state
-    }
-
-    fn quit(&mut self) {
-        self.quit_requested = true;
     }
 }
 

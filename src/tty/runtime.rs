@@ -1,15 +1,22 @@
 use std::{
     collections::VecDeque,
+    future::Future,
     io::Write,
+    pin::Pin,
+    sync::{Mutex, OnceLock},
     time::{Duration, SystemTime},
 };
 
-use crate::{
-    App, Backend, CharCell, Config, Key, KeyTyped, MouseState, Rgba, X256Color,
-    FRAME_DURATION, MAX_UPDATES_PER_FRAME,
-};
 use crossterm::{cursor, event, queue, style, terminal, QueueableCommand};
 use signal_hook::{consts::SIGTERM, iterator::Signals};
+
+use crate::{
+    CharCell, Key, KeyTyped, MouseState, Rgba, X256Color, FRAME_DURATION,
+};
+
+pub static RUNTIME: OnceLock<Mutex<Runtime>> = OnceLock::new();
+
+pub static mut FUTURE: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
 
 // Used for hacking up the fake key held detector. This part is fragile, we
 // want it to be as low as possible to get better time resolution, but it
@@ -24,42 +31,32 @@ use signal_hook::{consts::SIGTERM, iterator::Signals};
 const KEY_REPEAT_START: Duration = Duration::from_millis(700);
 const KEY_REPEAT_CONTINUE: Duration = Duration::from_millis(50);
 
-/// Run an application with the given starting scene and game data using a
-/// TTY backend.
-pub fn run(_config: &Config, mut app: impl App + 'static) -> ! {
-    let mut backend = TtyBackend::new();
-
-    while !backend.quit_requested {
-        let dt = backend.elapsed_since_last_update();
-        let n = (dt / FRAME_DURATION.as_secs_f64()) as u32;
-
-        app.update(&mut backend, n.min(MAX_UPDATES_PER_FRAME));
-        backend.keypress.pop_front();
-        backend.mouse_state.frame_update();
-        backend.process_events();
-
-        backend.last_update += (n as f64) * FRAME_DURATION.as_secs_f64();
-    }
-
-    drop(backend);
-
-    std::process::exit(0);
+pub fn with<F, T>(mut f: F) -> T
+where
+    F: FnMut(&mut Runtime) -> T,
+{
+    let mut gui = RUNTIME
+        .get()
+        .expect("backend not initialized")
+        .lock()
+        .unwrap();
+    f(&mut gui)
 }
 
-struct TtyBackend {
-    keypress: VecDeque<KeyTyped>,
-    last_update: f64,
+pub struct Runtime {
+    pub(crate) keypress: VecDeque<KeyTyped>,
+    pub(crate) last_update: f64,
+    pub(crate) logical_frame_count: u32,
     prev_buffer: (u32, u32, Vec<CharCell>),
     size: (u32, u32),
-    mouse_state: MouseState,
+    pub(crate) mouse_state: MouseState,
     // Store last frame's projection that needs to be applied to mouse
     // position.
     mouse_transform: MouseTransform,
 
     // Used for fake pressed key tracking.
-    last_key: (Key, f64),
+    pub(crate) last_key: (Key, f64),
 
-    quit_requested: bool,
     focus_lost: bool,
 }
 
@@ -77,14 +74,14 @@ impl Default for MouseTransform {
     }
 }
 
-impl Drop for TtyBackend {
+impl Drop for Runtime {
     fn drop(&mut self) {
         cleanup();
     }
 }
 
-impl TtyBackend {
-    fn new() -> Self {
+impl Runtime {
+    pub fn new() -> Self {
         let mut stdout = std::io::stdout();
         queue!(
             stdout,
@@ -120,146 +117,20 @@ impl TtyBackend {
             (80, 24)
         };
 
-        TtyBackend {
+        Runtime {
             keypress: Default::default(),
             last_update: now(),
+            logical_frame_count: 1,
             prev_buffer: Default::default(),
             size,
             mouse_state: Default::default(),
             mouse_transform: Default::default(),
             last_key: (Key::None, 0.0),
-            quit_requested: false,
             focus_lost: false,
         }
     }
 
-    fn resize(&mut self, w: u32, h: u32) {
-        self.prev_buffer = Default::default();
-        self.size = (w, h);
-    }
-
-    fn process_event(&mut self, event: event::Event) {
-        self.wake_up();
-        match event {
-            event::Event::Key(k) => {
-                if let Ok(k) = KeyTyped::try_from(k) {
-                    self.keypress.push_back(k);
-                    let key = k.key().char_to_lowercase();
-                    if self.is_down(key) {
-                        // Repeat press, low timeout
-                        self.last_key = (
-                            key,
-                            self.last_update
-                                + KEY_REPEAT_CONTINUE.as_secs_f64(),
-                        );
-                    } else {
-                        // New press, start with the long repeat start delay.
-                        self.last_key = (
-                            key,
-                            self.last_update + KEY_REPEAT_START.as_secs_f64(),
-                        );
-                    }
-                }
-            }
-            event::Event::Mouse(event::MouseEvent {
-                kind,
-                column,
-                row,
-                ..
-            }) => {
-                let (x, y) = (column as i32, row as i32);
-                match kind {
-                    event::MouseEventKind::Down(button) => {
-                        self.mouse_state.button_down(button.into());
-                    }
-                    event::MouseEventKind::Up(button) => {
-                        self.mouse_state.button_up(button.into());
-                    }
-                    event::MouseEventKind::Drag(_) => {
-                        *self.mouse_state.cursor_pos_mut() =
-                            self.transform_mouse_pos([x, y]);
-                    }
-                    event::MouseEventKind::Moved => {
-                        *self.mouse_state.cursor_pos_mut() =
-                            self.transform_mouse_pos([x, y]);
-                    }
-                    event::MouseEventKind::ScrollDown => {
-                        self.mouse_state.scroll(0, 1);
-                    }
-                    event::MouseEventKind::ScrollUp => {
-                        self.mouse_state.scroll(0, -1);
-                    }
-                    event::MouseEventKind::ScrollLeft => {
-                        self.mouse_state.scroll(-1, 0);
-                    }
-                    event::MouseEventKind::ScrollRight => {
-                        self.mouse_state.scroll(1, 0);
-                    }
-                }
-            }
-            event::Event::Resize(w, h) => {
-                // Record new canvas size.
-                self.resize(w as _, h as _);
-            }
-            event::Event::FocusGained => {
-                // No-op, entering the event handler wakes you up.
-            }
-            event::Event::FocusLost => {
-                // Go to sleep.
-                self.focus_lost = true;
-            }
-            event::Event::Paste(_) => {}
-        }
-    }
-
-    fn process_events(&mut self) {
-        // TODO Better error handling when processing crossterm events
-
-        // Process immediately available events.
-        // If focus is currently lost, don't poll for events but just enter
-        // the blocking event read until an event comes in and wakes the
-        // program.
-        while self.focus_lost
-            || event::poll(Duration::from_secs(0)).unwrap_or(false)
-        {
-            self.process_event(event::read().unwrap());
-        }
-
-        // If there is time left in the frame, sleep and wait for events.
-        let mut elapsed = self.elapsed_since_last_update();
-        let dt = FRAME_DURATION.as_secs_f64();
-        while elapsed < dt {
-            if event::poll(Duration::from_secs_f64(dt - elapsed))
-                .unwrap_or(false)
-            {
-                self.process_event(event::read().unwrap());
-            } else {
-                break;
-            }
-            elapsed = self.elapsed_since_last_update();
-        }
-    }
-
-    fn elapsed_since_last_update(&self) -> f64 {
-        now() - self.last_update
-    }
-
-    fn transform_mouse_pos(&self, [x, y]: [i32; 2]) -> [i32; 2] {
-        let [ox, oy] = self.mouse_transform.offset;
-        let [sx, sy] = self.mouse_transform.scale;
-        [(x - ox) * sx, (y - oy) * sy]
-    }
-
-    fn wake_up(&mut self) {
-        if self.focus_lost {
-            self.focus_lost = false;
-            self.last_update = now();
-        }
-    }
-}
-
-impl Backend for TtyBackend {
-    fn draw_pixels(&mut self, w: u32, h: u32, buffer: &[Rgba]) {
+    pub fn draw_pixels(&mut self, w: u32, h: u32, buffer: &[Rgba]) {
         let cells: Vec<CharCell> = (0..w * h / 2)
             .map(|i| {
                 let (x, y) = (i % w, (i / w) * 2);
@@ -278,7 +149,7 @@ impl Backend for TtyBackend {
         self.mouse_transform.scale = [1, 2];
     }
 
-    fn draw_chars(&mut self, w: u32, h: u32, buffer: &[CharCell]) {
+    pub fn draw_chars(&mut self, w: u32, h: u32, buffer: &[CharCell]) {
         assert!(buffer.len() == (w * h) as usize);
 
         self.mouse_transform.scale = [1, 1];
@@ -411,37 +282,145 @@ impl Backend for TtyBackend {
         self.prev_buffer = (w, h, buffer.to_vec());
     }
 
-    fn pixel_resolution(&self) -> (u32, u32) {
+    pub fn pixel_resolution(&self) -> (u32, u32) {
         // Block pseudopixel size multipliers.
         (self.size.0, self.size.1 * 2)
     }
 
-    fn char_resolution(&self) -> (u32, u32) {
+    pub fn char_resolution(&self) -> (u32, u32) {
         self.size
     }
 
-    fn now(&self) -> f64 {
-        self.last_update
-    }
-
-    fn is_down(&self, key: Key) -> bool {
+    pub fn is_down(&self, key: Key) -> bool {
         self.last_key.0 == key && self.last_update < self.last_key.1
     }
 
-    fn keypress(&self) -> KeyTyped {
-        self.keypress.front().copied().unwrap_or_default()
+    fn resize(&mut self, w: u32, h: u32) {
+        self.prev_buffer = Default::default();
+        self.size = (w, h);
     }
 
-    fn mouse_state(&self) -> MouseState {
-        self.mouse_state
+    pub fn process_event(&mut self, event: event::Event) {
+        self.wake_up();
+        match event {
+            event::Event::Key(k) => {
+                if let Ok(k) = KeyTyped::try_from(k) {
+                    self.keypress.push_back(k);
+                    let key = k.key().char_to_lowercase();
+                    if self.is_down(key) {
+                        // Repeat press, low timeout
+                        self.last_key = (
+                            key,
+                            self.last_update
+                                + KEY_REPEAT_CONTINUE.as_secs_f64(),
+                        );
+                    } else {
+                        // New press, start with the long repeat start delay.
+                        self.last_key = (
+                            key,
+                            self.last_update + KEY_REPEAT_START.as_secs_f64(),
+                        );
+                    }
+                }
+            }
+            event::Event::Mouse(event::MouseEvent {
+                kind,
+                column,
+                row,
+                ..
+            }) => {
+                let (x, y) = (column as i32, row as i32);
+                match kind {
+                    event::MouseEventKind::Down(button) => {
+                        self.mouse_state.button_down(button.into());
+                    }
+                    event::MouseEventKind::Up(button) => {
+                        self.mouse_state.button_up(button.into());
+                    }
+                    event::MouseEventKind::Drag(_) => {
+                        *self.mouse_state.cursor_pos_mut() =
+                            self.transform_mouse_pos([x, y]);
+                    }
+                    event::MouseEventKind::Moved => {
+                        *self.mouse_state.cursor_pos_mut() =
+                            self.transform_mouse_pos([x, y]);
+                    }
+                    event::MouseEventKind::ScrollDown => {
+                        self.mouse_state.scroll(0, 1);
+                    }
+                    event::MouseEventKind::ScrollUp => {
+                        self.mouse_state.scroll(0, -1);
+                    }
+                    event::MouseEventKind::ScrollLeft => {
+                        self.mouse_state.scroll(-1, 0);
+                    }
+                    event::MouseEventKind::ScrollRight => {
+                        self.mouse_state.scroll(1, 0);
+                    }
+                }
+            }
+            event::Event::Resize(w, h) => {
+                // Record new canvas size.
+                self.resize(w as _, h as _);
+            }
+            event::Event::FocusGained => {
+                // No-op, entering the event handler wakes you up.
+            }
+            event::Event::FocusLost => {
+                // Go to sleep.
+                self.focus_lost = true;
+            }
+            event::Event::Paste(_) => {}
+        }
     }
 
-    fn quit(&mut self) {
-        self.quit_requested = true;
+    pub fn process_events(&mut self) {
+        // TODO Better error handling when processing crossterm events
+
+        // Process immediately available events.
+        // If focus is currently lost, don't poll for events but just enter
+        // the blocking event read until an event comes in and wakes the
+        // program.
+        while self.focus_lost
+            || event::poll(Duration::from_secs(0)).unwrap_or(false)
+        {
+            self.process_event(event::read().unwrap());
+        }
+
+        // If there is time left in the frame, sleep and wait for events.
+        let mut elapsed = self.elapsed_since_last_update();
+        let dt = FRAME_DURATION.as_secs_f64();
+        while elapsed < dt {
+            if event::poll(Duration::from_secs_f64(dt - elapsed))
+                .unwrap_or(false)
+            {
+                self.process_event(event::read().unwrap());
+            } else {
+                break;
+            }
+            elapsed = self.elapsed_since_last_update();
+        }
+    }
+
+    pub fn elapsed_since_last_update(&self) -> f64 {
+        now() - self.last_update
+    }
+
+    fn transform_mouse_pos(&self, [x, y]: [i32; 2]) -> [i32; 2] {
+        let [ox, oy] = self.mouse_transform.offset;
+        let [sx, sy] = self.mouse_transform.scale;
+        [(x - ox) * sx, (y - oy) * sy]
+    }
+
+    fn wake_up(&mut self) {
+        if self.focus_lost {
+            self.focus_lost = false;
+            self.last_update = now();
+        }
     }
 }
 
-fn cleanup() {
+pub fn cleanup() {
     let mut stdout = std::io::stdout();
     queue!(
         stdout,
