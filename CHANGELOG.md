@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- The default GUI font sheet charset is no longer code page 437, it has
+  miscellaneous box drawing characters considered useful for pseudographics.
+
 ## [0.2.0] - 2023-09-19
 
 ### Fixed

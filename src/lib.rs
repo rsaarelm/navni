@@ -23,7 +23,7 @@ mod color;
 pub use color::{Rgba, X256Color};
 
 mod config;
-pub use config::{FontSheet, CODEPAGE_437};
+pub use config::{FontSheet, DEFAULT_FONT_CHARS};
 
 mod exec;
 pub use exec::FrameFuture;
