@@ -32,6 +32,12 @@ impl From<Rgba> for CharCell {
     }
 }
 
+impl From<CharCell> for char {
+    fn from(value: CharCell) -> Self {
+        char::from_u32(value.c as u32).expect("CharCell: invalid char")
+    }
+}
+
 impl CharCell {
     pub fn new(
         c: char,
