@@ -62,6 +62,11 @@ impl CharCell {
         };
     }
 
+    /// Swap background and foreground colors of cell.
+    pub fn invert(&mut self) {
+        *self = self.inv();
+    }
+
     /// Create default-colored `CharCell` with given char.
     pub fn c(c: char) -> Self {
         CharCell::new(c, X256Color::FOREGROUND, X256Color::BACKGROUND)
@@ -73,7 +78,7 @@ impl CharCell {
         self
     }
 
-    /// Swap background and foreground colors of cell.
+    /// Cell with background and foreground colors swapped.
     pub fn inv(mut self) -> Self {
         std::mem::swap(&mut self.foreground, &mut self.background);
         self
