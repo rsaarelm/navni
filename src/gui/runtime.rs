@@ -388,6 +388,10 @@ impl Runtime {
     pub fn draw_pixels(&mut self, w: u32, h: u32, buffer: &[crate::Rgba]) {
         assert!(buffer.len() == (w * h) as usize);
 
+        if w == 0 || h == 0 {
+            return;
+        }
+
         self.gl.texture_resize(
             self.bindings.images[BINDINGS_PIXEL_BUFFER_INDEX],
             w,
@@ -414,6 +418,10 @@ impl Runtime {
 
     pub fn draw_chars(&mut self, w: u32, h: u32, buffer: &[crate::CharCell]) {
         assert!(buffer.len() == (w * h) as usize);
+
+        if w == 0 || h == 0 {
+            return;
+        }
 
         // Make sure font is initialized.
         self.get_font();
