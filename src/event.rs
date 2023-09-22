@@ -170,6 +170,10 @@ impl Key {
             a => *a,
         }
     }
+
+    pub fn is_some(&self) -> bool {
+        !matches!(self, Key::None)
+    }
 }
 
 impl fmt::Display for Key {
