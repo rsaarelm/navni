@@ -265,7 +265,7 @@ pub enum MouseButton {
 }
 
 /// Complex mouse state for IMGUI
-#[derive(Copy, Clone, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum MouseState {
     /// Mouse hovering over position with buttons unpressed.
     Hover([i32; 2]),
@@ -367,6 +367,31 @@ impl MouseState {
     }
 }
 
+impl<T: Into<[i32; 2]>> std::ops::AddAssign<T> for MouseState {
+    fn add_assign(&mut self, rhs: T) {
+        let [dx, dy] = rhs.into();
+        match self {
+            Hover([x, y]) | Scroll([x, y], _) => {
+                *x += dx;
+                *y += dy;
+            }
+            Drag([x1, y1], [x2, y2], _) | Release([x1, y1], [x2, y2], _) => {
+                *x1 += dx;
+                *x2 += dx;
+                *y1 += dy;
+                *y2 += dy;
+            }
+        }
+    }
+}
+
+impl<T: Into<[i32; 2]>> std::ops::SubAssign<T> for MouseState {
+    fn sub_assign(&mut self, rhs: T) {
+        let [dx, dy] = rhs.into();
+        *self += [-dx, -dy];
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -443,5 +468,30 @@ mod test {
     fn key_typed_parse(typed: KeyTyped) -> bool {
         let s = typed.to_string();
         s.parse::<KeyTyped>().unwrap() == typed
+    }
+
+    #[test]
+    fn mouse_translate() {
+        use MouseState::*;
+
+        fn test(a: MouseState, c: MouseState) {
+            let mut b = a;
+            b += [10, 20];
+            assert_eq!(b, c);
+        }
+
+        test(Hover([10, 10]), Hover([20, 30]));
+        test(
+            Drag([10, 10], [20, 20], MouseButton::Left),
+            Drag([20, 30], [30, 40], MouseButton::Left),
+        );
+        test(
+            Release([10, 10], [20, 20], MouseButton::Left),
+            Release([20, 30], [30, 40], MouseButton::Left),
+        );
+
+        // NB. The second element in `Scroll` is the scroll delta, not a
+        // screen position. It should not be translated.
+        test(Scroll([10, 10], [1, 1]), Scroll([20, 30], [1, 1]));
     }
 }
