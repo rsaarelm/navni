@@ -1,9 +1,10 @@
+.direnv/
+.envrc
+
+result
+
 /target
 Cargo.lock
-
-# Flake stuff
-.direnv/
-result
 
 # Generated WASM files
 web/*.wasm
