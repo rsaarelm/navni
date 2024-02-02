@@ -30,7 +30,7 @@ syslog = { version = "6", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs = "5"
-env_logger = { version = "0.10", optional = true }
+env_logger = { version = "0.11", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 base64 = "0.21"
