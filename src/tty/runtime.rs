@@ -96,9 +96,10 @@ impl Runtime {
 
         // Watcher thread, call cleanup on SIGTERM.
         std::thread::spawn(move || {
-            for _ in Signals::new([SIGTERM])
+            if let Some(_) = Signals::new([SIGTERM])
                 .expect("Failed to register SIGTERM handler")
                 .forever()
+                .next()
             {
                 cleanup();
                 std::process::exit(1);
