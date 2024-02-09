@@ -32,6 +32,8 @@ impl Future for FrameFuture {
     }
 }
 
+// Called from the conditionally compiled backends, marked as dead_code
+// here so backend-less compiles don't give a warning.
 #[allow(dead_code)]
 pub fn poll<T>(f: &mut Pin<Box<dyn Future<Output = T>>>) -> Option<T> {
     let waker = waker();
