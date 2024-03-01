@@ -314,6 +314,7 @@ impl Runtime {
                 VertexAttribute::new("uv", VertexFormat::Float2),
             ],
             pixels_shader,
+            Default::default(),
         );
 
         let chars_pipeline = gl.new_pipeline(
@@ -323,6 +324,7 @@ impl Runtime {
                 VertexAttribute::new("uv", VertexFormat::Float2),
             ],
             chars_shader,
+            Default::default(),
         );
 
         let last_update = date::now();
