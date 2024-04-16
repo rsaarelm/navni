@@ -5,14 +5,20 @@ games. It can be built for either a native TTY console or for a desktop GUI
 window, and text graphics will use the native TTY display on TTY.
 
 You need to pick the backend using feature flags when using Navni, either
-`--features=tty` for TTY or `--features=gui` for the GUI desktop backend.
-To test the examples, run
+`--features=tty` for TTY or `--features=gui` for the GUI desktop backend. To
+test the examples, run
 
     cargo run --features=tty --example demo
 
 or
 
     cargo run --features=gui --example demo
+
+Navni takes responsibility for the
+["magical"](https://stackoverflow.com/a/16444789) platform-specific I/O
+interfaces involved in making a game, and only for those. It will not provide
+any game development functionality that's purely computational, such as
+pathfinding, procedural generation or sprite sheet management.
 
 ## Features
 
