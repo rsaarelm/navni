@@ -12,3 +12,18 @@ run-wasm: build-wasm
 build-wasm:
     cargo build --target=wasm32-unknown-unknown --features=gui --release --example demo
     cp target/wasm32-unknown-unknown/release/examples/demo.wasm web/
+
+# Download and minify JS shims
+generate-minified-js:
+    #!/bin/sh
+    OUT=$(pwd)/web
+    TMPDIR=$(mktemp -d)
+    cd $TMPDIR
+
+    wget https://raw.githubusercontent.com/not-fl3/miniquad/master/js/gl.js
+    wget https://raw.githubusercontent.com/optozorax/quad-storage/master/js/quad-storage.js
+    wget https://raw.githubusercontent.com/not-fl3/sapp-jsutils/master/js/sapp_jsutils.js
+
+    minify gl.js > $OUT/gl.js
+    minify quad-storage.js > $OUT/quad-storage.js
+    minify sapp_jsutils.js > $OUT/sapp_jsutils.js

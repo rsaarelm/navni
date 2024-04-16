@@ -28,6 +28,10 @@
             libGL
             xorg.libX11
             xorg.libXi
+
+            # Utils
+            just
+            minify
           ];
 
           LD_LIBRARY_PATH = libPath;
