@@ -13,6 +13,10 @@ build-wasm:
     cargo build --target=wasm32-unknown-unknown --features=gui --release --example demo
     cp target/wasm32-unknown-unknown/release/examples/demo.wasm web/
 
+update-flake:
+    rm -rf .direnv/
+    nix flake update
+
 # Download and minify JS shims
 generate-minified-js:
     #!/bin/sh
