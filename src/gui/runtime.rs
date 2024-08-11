@@ -210,7 +210,7 @@ impl Runtime {
 
         let vertex_buffer = gl.new_buffer(
             BufferType::VertexBuffer,
-            BufferUsage::Immutable,
+            BufferUsage::Dynamic,
             BufferSource::slice(&vertices),
         );
 
@@ -259,16 +259,10 @@ impl Runtime {
                 ShaderMeta {
                     images: vec!["pixels".to_string()],
                     uniforms: UniformBlockLayout {
-                        uniforms: vec![
-                            UniformDesc::new(
-                                "terminal_size",
-                                UniformType::Float2,
-                            ),
-                            UniformDesc::new(
-                                "canvas_scale",
-                                UniformType::Float2,
-                            ),
-                        ],
+                        uniforms: vec![UniformDesc::new(
+                            "terminal_size",
+                            UniformType::Float2,
+                        )],
                     },
                 },
             )
@@ -292,16 +286,10 @@ impl Runtime {
                         "background_color".to_string(),
                     ],
                     uniforms: UniformBlockLayout {
-                        uniforms: vec![
-                            UniformDesc::new(
-                                "terminal_size",
-                                UniformType::Float2,
-                            ),
-                            UniformDesc::new(
-                                "canvas_scale",
-                                UniformType::Float2,
-                            ),
-                        ],
+                        uniforms: vec![UniformDesc::new(
+                            "terminal_size",
+                            UniformType::Float2,
+                        )],
                     },
                 },
             )
@@ -405,11 +393,10 @@ impl Runtime {
         self.gl.apply_pipeline(&self.pixels_pipeline);
         self.gl.apply_bindings(&self.bindings);
 
-        let canvas_scale = self.pixel_canvas_scale(w, h);
+        self.pixel_canvas_scale(w, h);
 
         self.gl.apply_uniforms(UniformsSource::table(&Uniforms {
             terminal_size: (0.0, 0.0),
-            canvas_scale,
         }));
 
         self.clear();
@@ -471,11 +458,10 @@ impl Runtime {
         self.gl.apply_pipeline(&self.chars_pipeline);
         self.gl.apply_bindings(&self.bindings);
 
-        let canvas_scale = self.char_canvas_scale(w, h);
+        self.char_canvas_scale(w, h);
 
         self.gl.apply_uniforms(UniformsSource::table(&Uniforms {
             terminal_size: (w as f32, h as f32),
-            canvas_scale,
         }));
 
         self.clear();
@@ -515,10 +501,6 @@ impl Runtime {
         buffer_h: u32,
     ) -> (f32, f32) {
         let (w, h) = window::screen_size();
-        // Snap window dimensions to even integers, otherwise there may be pixel
-        // artifacts.
-        let (w, h) =
-            ((w as u32 & !1).max(2) as f32, (h as u32 & !1).max(2) as f32);
 
         let (buffer_w, buffer_h) = (buffer_w as f32, buffer_h as f32);
         let (mut x, mut y) = (buffer_w, buffer_h);
@@ -532,6 +514,26 @@ impl Runtime {
 
         self.mouse_scale = (s, s);
         self.mouse_offset = ((w - x) as i32 / 2, (h - y) as i32 / 2);
+
+        let x0 = -x / w;
+        let y0 = -y / h;
+
+        // Add pixel artifact preventing fudge factors if window dimensions
+        // are odd.
+        let x1 = (x - if w as u32 % 2 == 1 { 1.0 } else { 0.0 }) / w;
+        let y1 = (y - if h as u32 % 2 == 1 { 1.0 } else { 0.0 }) / h;
+
+        let vertices: [Vertex; 4] = [
+            Vertex::new(x0, y0, 0.0, 1.0),
+            Vertex::new(x1, y0, 1.0, 1.0),
+            Vertex::new(x1, y1, 1.0, 0.0),
+            Vertex::new(x0, y1, 0.0, 0.0),
+        ];
+
+        self.gl.buffer_update(
+            self.bindings.vertex_buffers[0],
+            BufferSource::slice(&vertices),
+        );
 
         (x / w, y / h)
     }
@@ -632,11 +634,9 @@ pub const VERTEX_SHADER: &str = r#"\
 attribute vec2 pos;
 attribute vec2 uv;
 
-uniform lowp vec2 canvas_scale;
-
 varying lowp vec2 texcoord;
 void main() {
-    gl_Position = vec4(pos * canvas_scale, 0, 1);
+    gl_Position = vec4(pos, 0, 1);
     texcoord = uv;
 }"#;
 
@@ -685,5 +685,4 @@ void main() {
 #[repr(C)]
 pub struct Uniforms {
     pub terminal_size: (f32, f32),
-    pub canvas_scale: (f32, f32),
 }
