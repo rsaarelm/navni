@@ -4,7 +4,7 @@ use std::env;
 fn main() {
     let args: Vec<String> = env::args().collect();
     let image =
-        image::io::Reader::open(args.get(1).expect("Usage: tty-image [FILE]"))
+        image::ImageReader::open(args.get(1).expect("Usage: tty-image [FILE]"))
             .expect("Failed to open image file")
             .decode()
             .expect("Failed to parse image file")

@@ -17,16 +17,16 @@ tty = ["crossterm", "signal-hook", "syslog"]
 
 [dependencies]
 anyhow = "1"
-crossterm = { version = "0.27", optional = true }
+crossterm = { version = "0.28", optional = true }
 image = { version = "0.25", default-features = false, features = ["png"] }
 log = "0.4"
 miniquad = { version = "0.4", optional = true }
-rustc-hash = "1"
+rustc-hash = "2"
 seq-macro = "0.3"
 serde = { version = "1", features = ["derive"] }
 serde_with = "3"
 signal-hook = { version = "0.3", optional = true }
-syslog = { version = "6", optional = true }
+syslog = { version = "7", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs = "5"
