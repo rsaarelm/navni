@@ -38,5 +38,6 @@ getrandom = { version = "0.2", features = ["custom"] }
 quad-storage = "0.1"
 
 [dev-dependencies]
+image = { version = "0.25" }
 quickcheck = "1"
 quickcheck_macros = "1"

@@ -12,7 +12,7 @@
         pkgs = (import nixpkgs) { inherit system; };
         code = pkgs.callPackage ./. { inherit nixpkgs system rust-overlay; };
         libPath = with pkgs;
-          lib.makeLibraryPath [ libGL xorg.libX11 xorg.libXi ];
+          lib.makeLibraryPath [ libGL xorg.libX11 xorg.libXi libxkbcommon ];
       in rec {
         devShell = with pkgs;
           mkShell {
