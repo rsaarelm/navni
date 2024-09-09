@@ -129,7 +129,8 @@ pub fn logical_frames_elapsed() -> u32 {
 /// Return if given key is currently held down.
 ///
 /// Letter keys are represented by lowercase printable letters no matter
-/// what shift status is. This method does not work well on TTY backends.
+/// what shift status is. This method is not supported on TTY backends and
+/// always returns false there.
 pub fn is_down(key: Key) -> bool {
     backend::is_down(key)
 }

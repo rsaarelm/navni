@@ -18,19 +18,6 @@ pub static RUNTIME: OnceLock<Mutex<Runtime>> = OnceLock::new();
 
 pub static mut FUTURE: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
 
-// Used for hacking up the fake key held detector. This part is fragile, we
-// want it to be as low as possible to get better time resolution, but it
-// can't be lower than the actual system key repeat delay or continuous
-// keypresses will stutter. The values were figured by trial and error of
-// seeing how low I can make them on Linux before the signal starts dropping
-// while the key is held. They might not work right on all platforms.
-//
-// Supporting keys held down on TTY side isn't an entirely serious feature.
-// It's recommended to stick to games whose input is based on typed keys if
-// the TTY target is important.
-const KEY_REPEAT_START: Duration = Duration::from_millis(700);
-const KEY_REPEAT_CONTINUE: Duration = Duration::from_millis(50);
-
 pub fn with<F, T>(mut f: F) -> T
 where
     F: FnMut(&mut Runtime) -> T,
@@ -53,9 +40,6 @@ pub struct Runtime {
     // Store last frame's projection that needs to be applied to mouse
     // position.
     mouse_transform: MouseTransform,
-
-    // Used for fake pressed key tracking.
-    pub(crate) last_key: (Key, f64),
 
     focus_lost: bool,
 }
@@ -126,7 +110,6 @@ impl Runtime {
             size,
             mouse_state: Default::default(),
             mouse_transform: Default::default(),
-            last_key: (Key::None, 0.0),
             focus_lost: false,
         }
     }
@@ -292,8 +275,10 @@ impl Runtime {
         self.size
     }
 
-    pub fn is_down(&self, key: Key) -> bool {
-        self.last_key.0 == key && self.last_update < self.last_key.1
+    pub fn is_down(&self, _key: Key) -> bool {
+        // TTY doesn't support this, just assume all pressed keys are
+        // immediately released.
+        false
     }
 
     fn resize(&mut self, w: u32, h: u32) {
@@ -307,21 +292,6 @@ impl Runtime {
             event::Event::Key(k) => {
                 if let Ok(k) = KeyTyped::try_from(k) {
                     self.keypress.push_back(k);
-                    let key = k.key().char_to_lowercase();
-                    if self.is_down(key) {
-                        // Repeat press, low timeout
-                        self.last_key = (
-                            key,
-                            self.last_update
-                                + KEY_REPEAT_CONTINUE.as_secs_f64(),
-                        );
-                    } else {
-                        // New press, start with the long repeat start delay.
-                        self.last_key = (
-                            key,
-                            self.last_update + KEY_REPEAT_START.as_secs_f64(),
-                        );
-                    }
                 }
             }
             event::Event::Mouse(event::MouseEvent {
