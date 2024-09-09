@@ -113,6 +113,11 @@ impl EventHandler for Handle {
             return;
         }
 
+        if !keymods.ctrl && c < 32 {
+            // Some unprintable keys like enter try to get through here...
+            return;
+        }
+
         if keymods.ctrl && c < 32 {
             // CTRL chars show up as nonprintable control codes on windows.
 
