@@ -45,3 +45,7 @@ pub fn keypress() -> KeyTyped {
 pub fn mouse_state() -> MouseState {
     unimplemented!()
 }
+
+pub fn backend_type() -> BackendType {
+    unimplemented!()
+}

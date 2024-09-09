@@ -1,3 +1,4 @@
 pub use crate::{
-    CharCell, Directory, Key, MouseButton, MouseState, Rgba, X256Color,
+    BackendType, CharCell, Directory, Key, MouseButton, MouseState, Rgba,
+    X256Color,
 };

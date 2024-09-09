@@ -146,3 +146,13 @@ pub fn keypress() -> KeyTyped {
 pub fn mouse_state() -> MouseState {
     backend::mouse_state()
 }
+
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum BackendType {
+    Tty,
+    Gui,
+}
+
+pub fn backend_type() -> BackendType {
+    backend::backend_type()
+}

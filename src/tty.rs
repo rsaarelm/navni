@@ -93,3 +93,7 @@ pub fn keypress() -> KeyTyped {
 pub fn mouse_state() -> MouseState {
     runtime::with(|r| r.mouse_state)
 }
+
+pub fn backend_type() -> BackendType {
+    BackendType::Tty
+}
