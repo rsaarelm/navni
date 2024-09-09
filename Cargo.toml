@@ -39,5 +39,6 @@ quad-storage = "0.1"
 
 [dev-dependencies]
 image = { version = "0.25" }
+doomgeneric = { version = "0.3.0-beta.2" }
 quickcheck = "1"
 quickcheck_macros = "1"
