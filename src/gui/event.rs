@@ -189,6 +189,7 @@ impl TryFrom<miniquad::KeyCode> for crate::Key {
             KeyCode::RightAlt => Ok(Alt),
             KeyCode::RightSuper => Ok(Icon),
             KeyCode::Menu => Err(()),
+            KeyCode::Back => Err(()),
             KeyCode::Unknown => Err(()),
         }
     }
