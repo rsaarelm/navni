@@ -25,6 +25,7 @@ use serde_with::{DeserializeFromStr, SerializeDisplay};
 pub struct KeyTyped {
     key: Key,
     mods: KeyMods,
+    is_repeat: bool,
 }
 
 impl From<KeyMods> for KeyTyped {
@@ -52,7 +53,7 @@ impl fmt::Display for KeyTyped {
         if self.mods.shift && !self.key.is_printable() {
             write!(f, "S-")?;
         }
-        write!(f, "{}", self.key)
+        write!(f, "{}{}", self.key, if self.is_repeat { "+" } else { "" })
     }
 }
 
@@ -61,6 +62,11 @@ impl FromStr for KeyTyped {
 
     fn from_str(mut s: &str) -> Result<Self, Self::Err> {
         let mut ret = KeyTyped::default();
+
+        if let Some(s2) = s.strip_suffix('+') {
+            ret.is_repeat = true;
+            s = s2;
+        }
 
         loop {
             if s.starts_with("D-") {
@@ -92,12 +98,16 @@ impl FromStr for KeyTyped {
 }
 
 impl KeyTyped {
-    pub fn new(key: Key, mods: KeyMods) -> Self {
+    pub fn new(key: Key, mods: KeyMods, is_repeat: bool) -> Self {
         if matches!(key, Key::Char(_)) && mods.shift {
             panic!("KeyTyped::new: shift flag on printable key");
         }
 
-        KeyTyped { key, mods }
+        KeyTyped {
+            key,
+            mods,
+            is_repeat,
+        }
     }
 
     pub fn key(&self) -> Key {
@@ -109,12 +119,28 @@ impl KeyTyped {
     }
 
     pub fn is(&self, code: &str) -> bool {
-        *self == code.parse().unwrap()
+        let Ok(other) = code.parse::<Self>() else {
+            return false;
+        };
+        self.ignore_repeat_flag() == other.ignore_repeat_flag()
     }
 
     /// Convenience method, true if a non-modifier key was pressed.
     pub fn is_some(&self) -> bool {
         self.key != Key::None
+    }
+
+    pub fn is_repeat(&self) -> bool {
+        self.is_repeat
+    }
+
+    /// The event with the repeat flag set to false.
+    ///
+    /// Use to compare against cached values that don't have the repeat flag
+    /// set.
+    pub fn ignore_repeat_flag(mut self) -> Self {
+        self.is_repeat = false;
+        self
     }
 }
 
@@ -460,6 +486,7 @@ mod test {
                     alt: bool::arbitrary(g),
                     logo: bool::arbitrary(g),
                 },
+                bool::arbitrary(g),
             )
         }
     }

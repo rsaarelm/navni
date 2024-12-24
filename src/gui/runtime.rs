@@ -80,10 +80,10 @@ impl EventHandler for Handle {
         &mut self,
         keycode: KeyCode,
         keymods: KeyMods,
-        _repeat: bool,
+        repeat: bool,
     ) {
         with(|r| {
-            if let Ok(typed) = KeyTyped::try_from((keycode, keymods)) {
+            if let Ok(typed) = KeyTyped::try_from((keycode, keymods, repeat)) {
                 // Miniquad won't give char_event for non-printable keys, but we
                 // want those too. Emit them here.
                 if !matches!(typed.key(), Key::Char(_)) {
@@ -96,7 +96,7 @@ impl EventHandler for Handle {
     }
 
     fn key_up_event(&mut self, keycode: KeyCode, keymods: KeyMods) {
-        if let Ok(typed) = KeyTyped::try_from((keycode, keymods)) {
+        if let Ok(typed) = KeyTyped::try_from((keycode, keymods, false)) {
             with(|r| r.key_down.remove(&typed.key().char_to_lowercase()));
         }
     }
@@ -105,7 +105,7 @@ impl EventHandler for Handle {
         &mut self,
         mut character: char,
         keymods: KeyMods,
-        _repeat: bool,
+        repeat: bool,
     ) {
         let c = character as u32;
         if c > 1 << 15 {
@@ -131,7 +131,7 @@ impl EventHandler for Handle {
         let mut mods = crate::KeyMods::from(keymods);
         // Shift must be false with printable keys.
         mods.shift = false;
-        let typed = KeyTyped::new(Key::Char(character), mods);
+        let typed = KeyTyped::new(Key::Char(character), mods, repeat);
         with(|r| r.keypress.push_back(typed));
     }
 

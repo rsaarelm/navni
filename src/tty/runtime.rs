@@ -41,6 +41,11 @@ pub struct Runtime {
     // Store last frame's projection that needs to be applied to mouse
     // position.
     mouse_transform: MouseTransform,
+    // If true, we can detect key release events.
+    //
+    // Requires a terminal that supports progressive keyboard enhancement.
+    release_detection: bool,
+    key_down: HashSet<Key>,
 
     focus_lost: bool,
 }
@@ -74,6 +79,10 @@ impl Runtime {
             event::EnableFocusChange,
             terminal::EnterAlternateScreen,
             cursor::Hide,
+            event::PushKeyboardEnhancementFlags(
+                event::KeyboardEnhancementFlags::REPORT_EVENT_TYPES
+                | event::KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES,
+            ),
         )
         .unwrap();
         terminal::enable_raw_mode().unwrap();
@@ -111,6 +120,9 @@ impl Runtime {
             size,
             mouse_state: Default::default(),
             mouse_transform: Default::default(),
+            release_detection: terminal::supports_keyboard_enhancement()
+                .unwrap_or(false),
+            key_down: Default::default(),
             focus_lost: false,
         }
     }
@@ -282,10 +294,10 @@ impl Runtime {
         self.size
     }
 
-    pub fn is_down(&self, _key: Key) -> bool {
-        // TTY doesn't support this, just assume all pressed keys are
-        // immediately released.
-        false
+    pub fn is_down(&self, key: Key) -> bool {
+        // The container is only being added to if `release_detection` is
+        // true.
+        self.key_down.contains(&key)
     }
 
     fn resize(&mut self, w: u32, h: u32) {
@@ -296,9 +308,20 @@ impl Runtime {
     pub fn process_event(&mut self, event: event::Event) {
         self.wake_up();
         match event {
+            event::Event::Key(k) if k.kind == event::KeyEventKind::Release => {
+                if self.release_detection {
+                    if let Ok(k) = KeyTyped::try_from(k) {
+                        self.key_down.remove(&k.key());
+                    }
+                }
+            }
             event::Event::Key(k) => {
                 if let Ok(k) = KeyTyped::try_from(k) {
                     self.keypress.push_back(k);
+
+                    if self.release_detection {
+                        self.key_down.insert(k.key());
+                    }
                 }
             }
             event::Event::Mouse(event::MouseEvent {
@@ -406,7 +429,8 @@ pub fn cleanup() {
         cursor::Show,
         terminal::LeaveAlternateScreen,
         event::DisableFocusChange,
-        event::DisableMouseCapture
+        event::DisableMouseCapture,
+        event::PopKeyboardEnhancementFlags,
     )
     .unwrap();
     terminal::disable_raw_mode().unwrap();

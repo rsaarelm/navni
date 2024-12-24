@@ -6,7 +6,10 @@ impl TryFrom<event::KeyEvent> for crate::KeyTyped {
 
     fn try_from(
         event::KeyEvent {
-            code, modifiers, ..
+            code,
+            modifiers,
+            kind,
+            ..
         }: crossterm::event::KeyEvent,
     ) -> Result<Self, Self::Error> {
         let key = Key::try_from(code)?;
@@ -20,7 +23,11 @@ impl TryFrom<event::KeyEvent> for crate::KeyTyped {
             mods.shift = false;
         }
 
-        Ok(crate::KeyTyped::new(key, mods))
+        Ok(crate::KeyTyped::new(
+            key,
+            mods,
+            kind == event::KeyEventKind::Repeat,
+        ))
     }
 }
 

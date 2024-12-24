@@ -12,11 +12,11 @@ impl TryFrom<miniquad::MouseButton> for crate::MouseButton {
     }
 }
 
-impl TryFrom<(miniquad::KeyCode, miniquad::KeyMods)> for crate::KeyTyped {
+impl TryFrom<(miniquad::KeyCode, miniquad::KeyMods, bool)> for crate::KeyTyped {
     type Error = ();
 
     fn try_from(
-        (k, m): (miniquad::KeyCode, miniquad::KeyMods),
+        (k, m, is_repeat): (miniquad::KeyCode, miniquad::KeyMods, bool),
     ) -> Result<Self, Self::Error> {
         use crate::{Key, KeyTyped};
 
@@ -26,7 +26,7 @@ impl TryFrom<(miniquad::KeyCode, miniquad::KeyMods)> for crate::KeyTyped {
             mods.shift = false;
         }
 
-        Ok(KeyTyped::new(key, mods))
+        Ok(KeyTyped::new(key, mods, is_repeat))
     }
 }
 
