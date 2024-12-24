@@ -7,7 +7,8 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use crossterm::{cursor, event, queue, style, terminal, QueueableCommand};
+use crossterm::{cursor, event, queue, style, terminal};
+use rustc_hash::FxHashSet as HashSet;
 use signal_hook::{consts::SIGTERM, iterator::Signals};
 
 use crate::{
@@ -72,7 +73,7 @@ impl Runtime {
             event::EnableMouseCapture,
             event::EnableFocusChange,
             terminal::EnterAlternateScreen,
-            cursor::Hide
+            cursor::Hide,
         )
         .unwrap();
         terminal::enable_raw_mode().unwrap();
@@ -139,6 +140,7 @@ impl Runtime {
         self.mouse_transform.scale = [1, 1];
 
         let mut stdout = std::io::stdout();
+        queue!(stdout, terminal::BeginSynchronizedUpdate).unwrap();
 
         if self.prev_buffer.0 != w || self.prev_buffer.1 != h {
             // Clear the screen after a resize.
@@ -183,7 +185,7 @@ impl Runtime {
 
                 made_changes = true;
 
-                // TODO 2023-06-24 Write crossterm render in an errorable function instead of having all the unwraps scattered about
+                // TODO Write crossterm render in an errorable function instead of having all the unwraps scattered about
                 if need_goto {
                     queue!(
                         stdout,
@@ -217,36 +219,40 @@ impl Runtime {
                         cell.foreground
                     };
 
-                    stdout.queue(style::ResetColor).unwrap();
+                    queue!(stdout, style::ResetColor).unwrap();
                     if is_inverse {
-                        stdout
-                            .queue(style::SetAttribute(
-                                style::Attribute::Reverse,
-                            ))
-                            .unwrap();
+                        queue!(
+                            stdout,
+                            style::SetAttribute(style::Attribute::Reverse,)
+                        )
+                        .unwrap();
                     } else if cell.background != X256Color::BACKGROUND {
-                        stdout
-                            .queue(style::SetBackgroundColor(
-                                style::Color::AnsiValue(cell.background.0),
-                            ))
-                            .unwrap();
+                        queue!(
+                            stdout,
+                            style::SetBackgroundColor(style::Color::AnsiValue(
+                                cell.background.0
+                            ),)
+                        )
+                        .unwrap();
                     }
                     if foreground != X256Color::FOREGROUND
                         && foreground != X256Color::BOLD_FOREGROUND
                     {
-                        stdout
-                            .queue(style::SetForegroundColor(
-                                style::Color::AnsiValue(foreground.0),
-                            ))
-                            .unwrap();
+                        queue!(
+                            stdout,
+                            style::SetForegroundColor(style::Color::AnsiValue(
+                                foreground.0
+                            ),)
+                        )
+                        .unwrap();
                     }
                     if foreground.0 >= 8 && foreground.0 < 16 && !is_inverse {
-                        stdout
-                            .queue(style::SetAttribute(style::Attribute::Bold))
-                            .unwrap();
+                        queue!(
+                            stdout,
+                            style::SetAttribute(style::Attribute::Bold,)
+                        )
+                        .unwrap();
                     }
-
-                    stdout.flush().unwrap();
                 }
 
                 if let Some(c) = char::from_u32(cell.c as u32) {
@@ -259,6 +265,7 @@ impl Runtime {
             }
         }
 
+        queue!(stdout, terminal::EndSynchronizedUpdate).unwrap();
         if made_changes {
             stdout.flush().unwrap();
         }
