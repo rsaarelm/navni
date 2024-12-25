@@ -82,7 +82,7 @@ impl DoomGeneric for NavniDoom {
             screen.h = h;
         }
 
-        self.update.send(()).unwrap();
+        let _ = self.update.send(());
     }
 
     fn get_key(&mut self) -> Option<KeyData> {
