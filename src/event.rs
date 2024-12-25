@@ -53,7 +53,7 @@ impl fmt::Display for KeyTyped {
         if self.mods.shift && !self.key.is_printable() {
             write!(f, "S-")?;
         }
-        write!(f, "{}{}", self.key, if self.is_repeat { "+" } else { "" })
+        write!(f, "{}", self.key)
     }
 }
 
@@ -62,11 +62,6 @@ impl FromStr for KeyTyped {
 
     fn from_str(mut s: &str) -> Result<Self, Self::Err> {
         let mut ret = KeyTyped::default();
-
-        if let Some(s2) = s.strip_suffix('+') {
-            ret.is_repeat = true;
-            s = s2;
-        }
 
         loop {
             if s.starts_with("D-") {
@@ -486,13 +481,14 @@ mod test {
                     alt: bool::arbitrary(g),
                     logo: bool::arbitrary(g),
                 },
-                bool::arbitrary(g),
+                false,
             )
         }
     }
 
     #[quickcheck]
     fn key_typed_parse(typed: KeyTyped) -> bool {
+        eprintln!("{typed:?}");
         let s = typed.to_string();
         s.parse::<KeyTyped>().unwrap() == typed
     }
