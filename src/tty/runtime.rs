@@ -426,11 +426,11 @@ pub fn cleanup() {
     queue!(
         stdout,
         style::ResetColor,
+        event::PopKeyboardEnhancementFlags,
         cursor::Show,
         terminal::LeaveAlternateScreen,
         event::DisableFocusChange,
         event::DisableMouseCapture,
-        event::PopKeyboardEnhancementFlags,
     )
     .unwrap();
     terminal::disable_raw_mode().unwrap();
