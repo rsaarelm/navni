@@ -1,11 +1,19 @@
 //! DOOM for navni. Have a DOOM1.WAD from https://doomwiki.org/wiki/DOOM1.WAD
-//! in the working directory when you run it.
+//! in the working directory when you run it. Use 'z' to fire since navni
+//! doesn't support reading just ctrl key as a keypress. Use Ctrl-C to quit.
 //!
-//! Controls currently don't work very well in TTY mode because it can't
-//! really track whether keys are held down or not.
+//! Controls will work badly in terminals that don't support [kitty keyboard
+//! protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) since they
+//! won't tell us whether keys are being held down or not.
+
+// BUG: Exiting via Doom's menu instead of pressing 'q' will skip navni's
+// cleanup and leaves the terminal in a bad state when running in TTY mode.
 
 use std::{
-    sync::mpsc::{self, Receiver, Sender},
+    sync::{
+        mpsc::{self, Receiver, Sender},
+        Arc, Mutex,
+    },
     thread,
 };
 
@@ -24,7 +32,8 @@ struct Screen {
 struct NavniDoom {
     max_w: u32,
     max_h: u32,
-    screens: Sender<Screen>,
+    screen: Arc<Mutex<Screen>>,
+    update: Sender<()>,
     keys: Receiver<(Key, bool)>,
 }
 
@@ -32,13 +41,15 @@ impl NavniDoom {
     pub fn new(
         max_w: u32,
         max_h: u32,
-        screens: Sender<Screen>,
+        screen: Arc<Mutex<Screen>>,
+        update: Sender<()>,
         keys: Receiver<(Key, bool)>,
     ) -> Self {
         NavniDoom {
             max_w,
             max_h,
-            screens,
+            screen,
+            update,
             keys,
         }
     }
@@ -64,7 +75,14 @@ impl DoomGeneric for NavniDoom {
             }
         }
 
-        self.screens.send(Screen { buf, w, h }).unwrap();
+        {
+            let mut screen = self.screen.lock().unwrap();
+            screen.buf = buf;
+            screen.w = w;
+            screen.h = h;
+        }
+
+        self.update.send(()).unwrap();
     }
 
     fn get_key(&mut self) -> Option<KeyData> {
@@ -101,20 +119,30 @@ async fn amain() {
     // released.
     let mut pressed = Key::None;
 
-    let (tx_screens, rx_screens) = mpsc::channel();
     let (tx_keys, rx_keys) = mpsc::channel();
+    let (tx_update, rx_update) = mpsc::channel();
     let (max_w, max_h) = navni::pixel_resolution();
+
+    let screen = Arc::new(Mutex::new(Screen {
+        buf: vec![Rgba::default(); (max_w * max_h) as usize],
+        w: max_w,
+        h: max_h,
+    }));
+
     // XXX: Resolution changes can't be communicated to NavniDoom after it's
     // been spawned.
-    let doom = NavniDoom::new(max_w, max_h, tx_screens, rx_keys);
+    let doom = NavniDoom::new(max_w, max_h, screen.clone(), tx_update, rx_keys);
     thread::spawn(move || {
         init(doom);
     });
 
-    while let Ok(screen) = rx_screens.recv() {
-        navni::draw_pixels(screen.w, screen.h, &screen.buf).await;
+    while let Ok(_) = rx_update.recv() {
+        {
+            let screen = screen.lock().unwrap();
+            navni::draw_pixels(screen.w, screen.h, &screen.buf).await;
+        }
 
-        if pressed == Key::Char('q') {
+        if navni::keypress().is("C-c") {
             return;
         }
 
