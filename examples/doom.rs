@@ -1,5 +1,5 @@
 //! DOOM for navni. Have a DOOM1.WAD from https://doomwiki.org/wiki/DOOM1.WAD
-//! in the working directory when you run it. Use 'z' to fire since navni
+//! in the working directory when you run it. Use 'm' to fire since navni
 //! doesn't support reading just ctrl key as a keypress. Use Ctrl-C to quit.
 //!
 //! Controls will work badly in terminals that don't support [kitty keyboard
@@ -97,8 +97,14 @@ impl DoomGeneric for NavniDoom {
             Key::Right => *keys::KEY_RIGHT,
             Key::Esc => keys::KEY_ESCAPE,
             Key::Enter => keys::KEY_ENTER,
+            Key::Char('w') => *keys::KEY_UP,
+            Key::Char('s') => *keys::KEY_DOWN,
+            Key::Char('a') => *keys::KEY_STRAFELEFT,
+            Key::Char('d') => *keys::KEY_STRAFERIGHT,
+            Key::Char('q') => *keys::KEY_LEFT,
+            Key::Char('e') => *keys::KEY_RIGHT,
             // XXX: Not bothering to figure out ctrl-as-key...
-            Key::Char('z') => *keys::KEY_FIRE,
+            Key::Char('m') => *keys::KEY_FIRE,
             Key::Char(' ') => *keys::KEY_USE,
             Key::Char(c) => c as u8,
             _ => 0,
