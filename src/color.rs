@@ -307,8 +307,7 @@ impl From<Rgba> for X256Color {
         // 6x6x6 chromatic color
         let c1 = 16 + c(col.r) * 36 + c(col.g) * 6 + c(col.b);
         // greyscale slide color
-        let c2 =
-            232 + (((col.greyscale() as i32 - 3) / 10).max(0).min(23) as u8);
+        let c2 = 232 + (((col.greyscale() as i32 - 3) / 10).clamp(0, 23) as u8);
 
         X256Color(
             if x256_to_rgba(c1).square_dist(&col)
