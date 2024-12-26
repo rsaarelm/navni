@@ -1,7 +1,4 @@
-use std::{future::Future, time::Duration};
-
-/// The target framerate of 60 FPS.
-pub const FRAME_DURATION: Duration = Duration::from_micros(1_000_000 / 60);
+use std::future::Future;
 
 #[cfg(feature = "gui")]
 mod gui;
@@ -27,6 +24,9 @@ pub use config::{FontSheet, DEFAULT_FONT_CHARS};
 
 mod exec;
 pub use exec::FrameFuture;
+
+mod frame_counter;
+pub use frame_counter::FrameCounter;
 
 #[cfg_attr(target_arch = "wasm32", path = "wasm_directory.rs")]
 #[cfg_attr(not(target_arch = "wasm32"), path = "fs_directory.rs")]
@@ -117,13 +117,6 @@ pub fn char_resolution(max_w: u32, max_h: u32) -> (u32, u32) {
 /// Return current time in seconds starting from an unspecified epoch.
 pub fn now() -> f64 {
     backend::now()
-}
-
-/// Return how many logical frames (of `FRAME_DURATION`) the previous actual
-/// frame covered. This becomes larger than 1 if your application runs slow,
-/// and you may then compensate by running more simulation steps.
-pub fn logical_frames_elapsed() -> u32 {
-    backend::logical_frames_elapsed()
 }
 
 /// Return if given key is currently held down.

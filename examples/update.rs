@@ -1,10 +1,18 @@
-use std::time::SystemTime;
-
 use navni::prelude::*;
 
 fn main() {
     navni::run("update speed test", async {
-        let mut t = SystemTime::now();
+        let mut frame_counter = if std::env::var("vblank_mode")
+            .unwrap_or(Default::default())
+            == "0"
+        {
+            // If vblank is disabled, run as fast as possible.
+            FrameCounter::new(0.0)
+        } else {
+            // Run at 60 FPS normally.
+            FrameCounter::new(1.0 / 60.0)
+        };
+
         let mut i = 0;
 
         let (w, h) = navni::char_resolution(0, 0);
@@ -40,10 +48,9 @@ fn main() {
             }
             i += 1;
 
-            let delta = SystemTime::now().duration_since(t).unwrap();
-            t += delta;
-
-            let fps = format!("FPS {}   ", 1000 / (delta.as_millis() + 1));
+            frame_counter.tick();
+            let fps =
+                format!("FPS {}   ", (1.0 / frame_counter.avg_frame()) as i32);
             for (i, c) in fps.chars().enumerate() {
                 buf[i] = CharCell::from(c);
             }

@@ -4,16 +4,14 @@ use std::{
     io::Write,
     pin::Pin,
     sync::{Mutex, OnceLock},
-    time::{Duration, SystemTime},
+    time::Duration,
 };
 
 use crossterm::{cursor, event, queue, style, terminal};
 use rustc_hash::FxHashSet as HashSet;
 use signal_hook::{consts::SIGTERM, iterator::Signals};
 
-use crate::{
-    CharCell, Key, KeyTyped, MouseState, Rgba, X256Color, FRAME_DURATION,
-};
+use crate::{CharCell, Key, KeyTyped, MouseState, Rgba, X256Color};
 
 pub static RUNTIME: OnceLock<Mutex<Runtime>> = OnceLock::new();
 
@@ -33,8 +31,6 @@ where
 
 pub struct Runtime {
     pub(crate) keypress: VecDeque<KeyTyped>,
-    pub(crate) last_update: f64,
-    pub(crate) logical_frame_count: u32,
     prev_buffer: (u32, u32, Vec<CharCell>),
     size: (u32, u32),
     pub(crate) mouse_state: MouseState,
@@ -115,8 +111,6 @@ impl Runtime {
 
         Runtime {
             keypress: Default::default(),
-            last_update: now(),
-            logical_frame_count: 1,
             prev_buffer: Default::default(),
             size,
             mouse_state: Default::default(),
@@ -388,24 +382,6 @@ impl Runtime {
         {
             self.process_event(event::read().unwrap());
         }
-
-        // If there is time left in the frame, sleep and wait for events.
-        let mut elapsed = self.elapsed_since_last_update();
-        let dt = FRAME_DURATION.as_secs_f64();
-        while elapsed < dt {
-            if event::poll(Duration::from_secs_f64(dt - elapsed))
-                .unwrap_or(false)
-            {
-                self.process_event(event::read().unwrap());
-            } else {
-                break;
-            }
-            elapsed = self.elapsed_since_last_update();
-        }
-    }
-
-    pub fn elapsed_since_last_update(&self) -> f64 {
-        now() - self.last_update
     }
 
     fn transform_mouse_pos(&self, [x, y]: [i32; 2]) -> [i32; 2] {
@@ -417,7 +393,6 @@ impl Runtime {
     fn wake_up(&mut self) {
         if self.focus_lost {
             self.focus_lost = false;
-            self.last_update = now();
         }
     }
 }
@@ -436,11 +411,4 @@ pub fn cleanup() {
     .unwrap();
     terminal::disable_raw_mode().unwrap();
     stdout.flush().unwrap();
-}
-
-fn now() -> f64 {
-    SystemTime::now()
-        .duration_since(SystemTime::UNIX_EPOCH)
-        .unwrap()
-        .as_secs_f64()
 }

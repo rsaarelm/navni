@@ -8,9 +8,7 @@ use std::{
 use miniquad::*;
 use rustc_hash::FxHashSet as HashSet;
 
-use crate::{
-    FontSheet, Key, KeyTyped, MouseState, Rgba, X256Color, FRAME_DURATION,
-};
+use crate::{FontSheet, Key, KeyTyped, MouseState, Rgba, X256Color};
 
 pub static RUNTIME: OnceLock<Mutex<Runtime>> = OnceLock::new();
 
@@ -43,37 +41,21 @@ impl EventHandler for Handle {
     }
 
     fn draw(&mut self) {
-        let n_frames = with(|r| {
-            let now = date::now();
-            let elapsed = now - r.last_update;
-
-            (elapsed / FRAME_DURATION.as_secs_f64()) as u32
-        });
-
-        // One or more frames have elapsed, tick the state machine.
-        if n_frames > 0 {
-            with(|r| {
-                r.logical_frame_count = n_frames;
-                r.last_update += n_frames as f64 * FRAME_DURATION.as_secs_f64();
-            });
-
-            // Poll on the application future, this moves application logic
-            // forward to the point where it awaits for frame change.
-            //
-            // If the future completes, the application run has ended and
-            // we should quit.
-            if unsafe { crate::exec::poll(FUTURE.as_mut().unwrap()) }.is_some()
-            {
-                window::quit();
-                return;
-            }
-
-            // Update input stack machines.
-            with(|r| {
-                r.keypress.pop_front();
-                r.mouse_state.frame_update();
-            });
+        // Poll on the application future, this moves application logic
+        // forward to the point where it awaits for frame change.
+        //
+        // If the future completes, the application run has ended and
+        // we should quit.
+        if unsafe { crate::exec::poll(FUTURE.as_mut().unwrap()) }.is_some() {
+            window::quit();
+            return;
         }
+
+        // Update input stack machines.
+        with(|r| {
+            r.keypress.pop_front();
+            r.mouse_state.frame_update();
+        });
     }
 
     fn key_down_event(
@@ -186,12 +168,6 @@ pub struct Runtime {
 
     system_colors: [Rgba; 16],
     font: Option<Font>,
-
-    pub(crate) last_update: f64,
-    /// How many logical frames were covered in last frame.
-    ///
-    /// This goes up if the app is slow and drops frames.
-    pub(crate) logical_frame_count: u32,
 
     pub(crate) key_down: HashSet<Key>,
     pub(crate) mouse_state: MouseState,
@@ -320,8 +296,6 @@ impl Runtime {
             Default::default(),
         );
 
-        let last_update = date::now();
-
         Runtime {
             gl,
             pixels_pipeline,
@@ -329,8 +303,6 @@ impl Runtime {
             bindings,
             font: None,
             system_colors: std::array::from_fn(|i| X256Color(i as u8).into()),
-            last_update,
-            logical_frame_count: 1,
             key_down: Default::default(),
             mouse_state: Default::default(),
             keypress: Default::default(),

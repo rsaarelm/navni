@@ -57,11 +57,7 @@ pub fn char_resolution(max_w: u32, max_h: u32) -> (u32, u32) {
 }
 
 pub fn now() -> f64 {
-    runtime::with(|r| r.last_update)
-}
-
-pub fn logical_frames_elapsed() -> u32 {
-    runtime::with(|r| r.logical_frame_count)
+    miniquad::date::now()
 }
 
 pub fn is_down(key: Key) -> bool {

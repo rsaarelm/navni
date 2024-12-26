@@ -30,10 +30,6 @@ pub fn now() -> f64 {
     unimplemented!()
 }
 
-pub fn logical_frames_elapsed() -> u32 {
-    unimplemented!()
-}
-
 pub fn is_down(_key: Key) -> bool {
     unimplemented!()
 }
