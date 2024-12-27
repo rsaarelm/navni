@@ -149,7 +149,6 @@ impl Runtime {
         self.mouse_transform.scale = [1, 1];
 
         let mut stdout = std::io::stdout();
-        queue!(stdout, terminal::BeginSynchronizedUpdate).unwrap();
 
         if self.prev_buffer.0 != w || self.prev_buffer.1 != h {
             // Clear the screen after a resize.
@@ -274,7 +273,6 @@ impl Runtime {
             }
         }
 
-        queue!(stdout, terminal::EndSynchronizedUpdate).unwrap();
         if made_changes {
             stdout.flush().unwrap();
         }
