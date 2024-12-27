@@ -93,6 +93,11 @@ async fn amain() {
 
         navni::draw_chars(W as u32, H as u32, &buf).await;
 
+        let press = navni::keypress();
+        if press.is_some() {
+            log::info!("Pressed: {press:?}");
+        }
+
         if navni::keypress().key() == Key::Esc {
             break;
         }
@@ -100,6 +105,7 @@ async fn amain() {
 }
 
 fn main() {
+    navni::logger::start("Navni demo");
     navni::run("Navni demo", amain());
 }
 
