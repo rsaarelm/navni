@@ -97,13 +97,15 @@ impl DoomGeneric for NavniDoom {
             Key::Right => *keys::KEY_RIGHT,
             Key::Esc => keys::KEY_ESCAPE,
             Key::Enter => keys::KEY_ENTER,
+            Key::Ctrl => *keys::KEY_FIRE,
             Key::Char('w') => *keys::KEY_UP,
             Key::Char('s') => *keys::KEY_DOWN,
             Key::Char('a') => *keys::KEY_STRAFELEFT,
             Key::Char('d') => *keys::KEY_STRAFERIGHT,
             Key::Char('q') => *keys::KEY_LEFT,
             Key::Char('e') => *keys::KEY_RIGHT,
-            // XXX: Not bothering to figure out ctrl-as-key...
+            // Alternate fire key in case terminal doesn't support reading
+            // standalone Ctrl presses.
             Key::Char('m') => *keys::KEY_FIRE,
             Key::Char(' ') => *keys::KEY_USE,
             Key::Char(c) => c as u8,
@@ -121,10 +123,6 @@ impl DoomGeneric for NavniDoom {
 }
 
 async fn amain() {
-    // Register for currently pressed-down key, send a release event if it's
-    // released.
-    let mut pressed = Key::None;
-
     let (tx_keys, rx_keys) = mpsc::channel();
     let (tx_update, rx_update) = mpsc::channel();
     let (max_w, max_h) = navni::pixel_resolution();
@@ -142,6 +140,8 @@ async fn amain() {
         init(doom);
     });
 
+    let mut pressed_keys = Vec::new();
+
     while let Ok(_) = rx_update.recv() {
         {
             let screen = screen.lock().unwrap();
@@ -152,22 +152,18 @@ async fn amain() {
             return;
         }
 
-        if pressed != Key::None {
-            if !navni::is_down(pressed) {
-                tx_keys.send((pressed, false)).unwrap();
-                pressed = Key::None;
+        // Send key releases.
+        for i in (0..pressed_keys.len()).rev() {
+            if !navni::is_down(pressed_keys[i]) {
+                tx_keys.send((pressed_keys[i], false)).unwrap();
+                pressed_keys.swap_remove(i);
             }
         }
 
-        let key = navni::keypress().key();
-
-        if key != pressed && key != Key::None {
-            if pressed != Key::None {
-                tx_keys.send((pressed, false)).unwrap();
-            }
-            pressed = key;
-
-            tx_keys.send((key, true)).unwrap();
+        let pressed = navni::keypress();
+        if pressed.is_some() {
+            pressed_keys.push(pressed.key());
+            tx_keys.send((pressed.key(), true)).unwrap();
         }
     }
 }
