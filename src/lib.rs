@@ -119,6 +119,11 @@ pub fn now() -> f64 {
     backend::now()
 }
 
+/// Sleep for given number of seconds
+pub fn sleep(seconds: f64) {
+    backend::sleep(seconds)
+}
+
 /// Return if given key is currently held down.
 ///
 /// Letter keys are represented by lowercase printable letters no matter

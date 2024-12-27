@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 /// struct FrameCounter that tracks frame rate.
 pub struct FrameCounter {
     target_duration: f64,
@@ -38,9 +36,7 @@ impl FrameCounter {
         if delta < self.target_duration {
             // If we have a target duration and less time than the duration
             // has elapsed, sleep for the remaining time.
-            std::thread::sleep(Duration::from_secs_f64(
-                self.target_duration - delta,
-            ));
+            crate::sleep(self.target_duration - delta);
             delta = self.target_duration;
         }
 

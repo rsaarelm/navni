@@ -73,6 +73,10 @@ pub fn now() -> f64 {
         .as_secs_f64()
 }
 
+pub fn sleep(seconds: f64) {
+    std::thread::sleep(std::time::Duration::from_secs_f64(seconds));
+}
+
 pub fn is_down(key: Key) -> bool {
     runtime::with(|r| r.is_down(key))
 }

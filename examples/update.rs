@@ -49,8 +49,10 @@ fn main() {
             i += 1;
 
             frame_counter.tick();
-            let fps =
-                format!("FPS {}   ", (1.0 / frame_counter.avg_frame()) as i32);
+            let fps = format!(
+                "FPS {}   ",
+                (1.0 / frame_counter.avg_frame()).round() as i32
+            );
             for (i, c) in fps.chars().enumerate() {
                 buf[i] = CharCell::from(c);
             }

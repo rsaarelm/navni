@@ -30,6 +30,10 @@ pub fn now() -> f64 {
     unimplemented!()
 }
 
+pub fn sleep(_seconds: f64) {
+    unimplemented!()
+}
+
 pub fn is_down(_key: Key) -> bool {
     unimplemented!()
 }

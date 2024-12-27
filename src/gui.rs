@@ -60,6 +60,20 @@ pub fn now() -> f64 {
     miniquad::date::now()
 }
 
+pub fn sleep(seconds: f64) {
+    // WASM Does not have a sleep function, so busy-loop instead.
+    #[cfg(target_arch = "wasm32")]
+    {
+        let start = now();
+        while now() - start < seconds {}
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        std::thread::sleep(std::time::Duration::from_secs_f64(seconds));
+    }
+}
+
 pub fn is_down(key: Key) -> bool {
     runtime::with(|r| r.key_down.contains(&key))
 }
