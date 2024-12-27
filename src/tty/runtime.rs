@@ -76,8 +76,10 @@ impl Runtime {
             terminal::EnterAlternateScreen,
             cursor::Hide,
             event::PushKeyboardEnhancementFlags(
+                // Enable tracking of release events.
                 event::KeyboardEnhancementFlags::REPORT_EVENT_TYPES
-                | event::KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES,
+                | event::KeyboardEnhancementFlags::REPORT_ALTERNATE_KEYS
+                | event::KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES
             ),
         )
         .unwrap();
@@ -302,12 +304,11 @@ impl Runtime {
 
     pub fn process_event(&mut self, event: event::Event) {
         self.wake_up();
+
         match event {
             event::Event::Key(k) if k.kind == event::KeyEventKind::Release => {
-                if self.release_detection {
-                    if let Ok(k) = KeyTyped::try_from(k) {
-                        self.key_down.remove(&k.key());
-                    }
+                if let Ok(k) = KeyTyped::try_from(k) {
+                    self.key_down.remove(&k.key());
                 }
             }
             event::Event::Key(k) => {
