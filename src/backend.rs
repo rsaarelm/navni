@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use crate::{prelude::*, FontSheet, FrameFuture, KeyTyped};
+use crate::{FontSheet, FrameFuture, KeyTyped, prelude::*};
 
 pub fn run(_window_title: &str, _amain: impl Future<Output = ()> + 'static) {
     panic!("Please compile with --features=gui or --features=tty");

@@ -1,7 +1,7 @@
 //! Graphical desktop application backend.
 use std::{future::Future, sync::Mutex};
 
-use crate::{prelude::*, FontSheet, FrameFuture, KeyTyped};
+use crate::{FontSheet, FrameFuture, KeyTyped, prelude::*};
 
 use self::runtime::Handle;
 

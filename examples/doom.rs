@@ -11,15 +11,15 @@
 
 use std::{
     sync::{
-        mpsc::{self, Receiver, Sender},
         Arc, Mutex,
+        mpsc::{self, Receiver, Sender},
     },
     thread,
 };
 
 use doomgeneric::{
-    game::{init, DoomGeneric},
-    input::{keys, KeyData},
+    game::{DoomGeneric, init},
+    input::{KeyData, keys},
 };
 use navni::prelude::*;
 

@@ -20,7 +20,7 @@ mod color;
 pub use color::{Rgba, X256Color};
 
 mod config;
-pub use config::{FontSheet, DEFAULT_FONT_CHARS};
+pub use config::{DEFAULT_FONT_CHARS, FontSheet};
 
 mod exec;
 pub use exec::FrameFuture;

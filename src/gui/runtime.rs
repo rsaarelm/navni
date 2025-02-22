@@ -322,8 +322,10 @@ impl Runtime {
         let font_size;
 
         let (font_image, font_chars) = {
-            assert!(sheet.image.width() % 16 == 0 && sheet.image.height() % 16 == 0,
-                    "Font sheet dimensions aren't a multiple of 16, sheet must be a 16x16 grid");
+            assert!(
+                sheet.image.width() % 16 == 0 && sheet.image.height() % 16 == 0,
+                "Font sheet dimensions aren't a multiple of 16, sheet must be a 16x16 grid"
+            );
             font_size = (sheet.image.width() / 16, sheet.image.height() / 16);
             (
                 create_texture(

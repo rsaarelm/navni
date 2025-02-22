@@ -184,9 +184,7 @@ impl Key {
     /// for a physical keyboard key.
     pub fn char_to_lowercase(&self) -> Key {
         match self {
-            Key::Char(c) => {
-                Key::Char(c.to_ascii_lowercase())
-            }
+            Key::Char(c) => Key::Char(c.to_ascii_lowercase()),
             a => *a,
         }
     }
@@ -344,11 +342,7 @@ impl MouseState {
     }
 
     pub fn scroll_delta(&self) -> [i32; 2] {
-        if let Scroll(_, z) = self {
-            *z
-        } else {
-            [0, 0]
-        }
+        if let Scroll(_, z) = self { *z } else { [0, 0] }
     }
 
     pub(crate) fn button_down(&mut self, button: MouseButton) {
