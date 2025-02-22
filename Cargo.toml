@@ -4,7 +4,7 @@ version = "0.2.0"
 license = "MIT/Apache-2.0"
 authors = ["Risto Saarelma <risto.saarelma@iki.fi>"]
 exclude = ["githooks/", "flake.nix", "flake.lock", "Justfile", "img/", "web/"]
-edition = "2021"
+edition = "2024"
 description = "Library for pixel or text graphics games"
 keywords = ["terminal", "gui", "gamedev"]
 
@@ -29,12 +29,11 @@ signal-hook = { version = "0.3", optional = true }
 syslog = { version = "7", optional = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-dirs = "5"
+dirs = "6"
 env_logger = { version = "0.11", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 base64 = "0.22"
-getrandom = { version = "0.2", features = ["custom"] }
 quad-storage = "0.1"
 
 [dev-dependencies]

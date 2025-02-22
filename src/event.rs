@@ -184,9 +184,8 @@ impl Key {
     /// for a physical keyboard key.
     pub fn char_to_lowercase(&self) -> Key {
         match self {
-            Key::Char(mut c) => {
-                c.make_ascii_lowercase();
-                Key::Char(c)
+            Key::Char(c) => {
+                Key::Char(c.to_ascii_lowercase())
             }
             a => *a,
         }

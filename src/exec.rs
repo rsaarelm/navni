@@ -53,7 +53,7 @@ fn waker() -> Waker {
         panic!("not supported")
     }
     unsafe fn wake_by_ref(data: *const ()) {
-        wake(data)
+        unsafe { wake(data) }
     }
     unsafe fn drop(_data: *const ()) {
         // Nothing to do
